@@ -36,7 +36,7 @@
 Run the AI agent:
 
 ```bash
-uv run main.py --message 'What is my name'
+uv run main.py parse_review --review "Love the new update! Dark mode looks great. But please fix the crash on iOS 18. 5 stars."
 ```
 
 ### Option 2: HTTP Server (server.py)
