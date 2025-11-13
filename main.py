@@ -5,55 +5,23 @@ Usage: python main.py --message "Your message here"
 """
 
 import argparse
-import sys
-from ai.client import OpenRouterClient
+
+from cli.parse_review import parse_review
 
 
 def main():
-    """Parse CLI arguments and send message to OpenRouter."""
     parser = argparse.ArgumentParser(
         description="Send a message to OpenRouter API",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    review_parser = subparsers.add_parser("parse_review", help="Parse review message")
 
-    parser.add_argument(
-        "--message", "-m", type=str, required=True, help="Message to send to the AI"
-    )
-
-    parser.add_argument(
-        "--temperature",
-        "-t",
-        type=float,
-        default=0.7,
-        help="Temperature for response generation (default: 0.7)",
-    )
-
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="kwaipilot/kat-coder-pro:free",
-        help="Model to use (default: kwaipilot/kat-coder-pro:free)",
-    )
+    review_parser.add_argument("--review", type=str, help="Review text")
+    review_parser.set_defaults(func=parse_review)
 
     args = parser.parse_args()
-
-    try:
-        client = OpenRouterClient()
-        messages = [{"role": "user", "content": args.message}]
-        print(f"📤 Sending message to {args.model}...")
-
-        response_data = client.send_chat_completion(
-            messages=messages, model=args.model, temperature=args.temperature
-        )
-
-        format_response(response_data)
-
-    except ValueError as e:
-        print(f"❌ Configuration error: {e}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    args.func(args)
 
 
 def format_response(response_data):

@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from ai.client import OpenRouterClient
 
-# Load environment variables
+MODEL = 'kwaipilot/kat-coder-pro:free'
 
 app = Flask(__name__)
 
@@ -33,7 +33,7 @@ def chat():
             }), 400
 
         user_message = data.get('message')
-        model = 'kwaipilot/kat-coder-pro:free'
+        model = MODEL
         temperature = data.get('temperature', 0.7)
         conversation_history = data.get('conversation_history', [])
         short = data.get('short', False)
