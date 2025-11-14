@@ -32,7 +32,7 @@ class OpenRouterClient:
         }
 
     def send_chat_completion(
-        self, messages, model="kwaipilot/kat-coder-pro:free", temperature=0.7
+        self, messages, model="kwaipilot/kat-coder-pro:free", temperature=0.7, response_format=None
     ):
         """
         Send a chat completion request to OpenRouter API.
@@ -41,6 +41,7 @@ class OpenRouterClient:
             messages: List of message objects with 'role' and 'content' keys
             model: Model to use for completion
             temperature: Temperature parameter for response generation
+            response_format: Optional response format schema (Pydantic model)
 
         Returns:
             dict: Response data from OpenRouter API
@@ -50,6 +51,17 @@ class OpenRouterClient:
         """
         headers = self.default_headers()
         payload = {"model": model, "messages": messages, "temperature": temperature}
+
+        # Add response_format if provided
+        if response_format:
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": response_format.__name__,
+                    "schema": response_format.model_json_schema(),
+                    "strict": True
+                }
+            }
 
         response = requests.post(self.URL, headers=headers, json=payload, timeout=30)
 

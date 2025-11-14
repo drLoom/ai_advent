@@ -1,9 +1,23 @@
-from flask import Flask, request, jsonify
-from ai.client import OpenRouterClient
+import logging
+from flask import Flask, request, jsonify, render_template
+from conversation import Conversation
 
-MODEL = 'kwaipilot/kat-coder-pro:free'
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# MODEL = 'kwaipilot/kat-coder-pro:free'
+MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
 
 app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    """Render the chat UI."""
+    return render_template('chat.html', model=MODEL)
 
 
 @app.route('/health', methods=['GET'])
@@ -14,16 +28,6 @@ def health_check():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """
-    Accept POST requests and forward them to OpenRouter API.
-
-    Expected request body:
-    {
-        "message": "Your message here",
-        "temperature": 0.7 (optional, defaults to 0.7),
-        "conversation_history": [] (optional, list of previous messages)
-    }
-    """
     try:
         data = request.get_json()
 
@@ -33,46 +37,25 @@ def chat():
             }), 400
 
         user_message = data.get('message')
-        model = MODEL
         temperature = data.get('temperature', 0.7)
         conversation_history = data.get('conversation_history', [])
         short = data.get('short', False)
+        research = data.get('research', False)
 
         if not user_message:
             return jsonify({
                 "error": "Missing required field: 'message'"
             }), 400
 
-        messages = conversation_history.copy()
-        messages.append({
-            "role": "user",
-            "content": user_message
-        })
+        conversation = Conversation(model=MODEL, temperature=temperature)
+        response = conversation.process_message(
+            user_message=user_message,
+            conversation_history=conversation_history,
+            short=short,
+            research=research
+        )
 
-        response_data = OpenRouterClient().send_chat_completion(messages, temperature=temperature)
-        ai_message = response_data["choices"][0]["message"]["content"]
-        ai_message = ai_message.split('\n')[0]
-        if short:
-            return jsonify({
-                "success": True,
-                "message": ai_message
-            }), 200
-        else:
-            return jsonify({
-                "success": True,
-                "message": ai_message,
-                "model": model,
-                "usage": response_data.get("usage", {}),
-                "conversation_history": messages + [{
-                    "role": "assistant",
-                    "content": ai_message
-                }]
-            }), 200
-
-    except ValueError as e:
-        return jsonify({
-            "error": str(e)
-        }), 500
+        return jsonify(response), 200
 
     except Exception as e:
         return jsonify({
