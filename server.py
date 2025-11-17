@@ -9,7 +9,9 @@ logging.basicConfig(
 )
 
 # MODEL = 'kwaipilot/kat-coder-pro:free'
-MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
+# MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
+MODEL = 'nvidia/nemotron-nano-12b-v2-vl'
+# MODEL = 'google/gemini-2.5-pro'
 
 app = Flask(__name__)
 

@@ -84,22 +84,18 @@ class Conversation:
         })
 
         response_format = ResearchResponse if research else None
+
+        logger.info(f"request temperature: {self.temperature}, messages: {messages}")
+
         response_data = self.client.send_chat_completion(
             messages, model=self.model, temperature=self.temperature, response_format=response_format
         )
 
-        logger.info(f"🤖 AI response data: {response_data}")
+        logger.info(f"AI response data: {response_data}")
 
         ai_message = response_data["choices"][0]["message"]["content"]
 
-
-
-        data = json.loads(ai_message)
-
-
-        if not research:
-            ai_message = ai_message.split('\n')[0]
-        else:
+        if research:
             data = json.loads(ai_message)
             if data["status"] == "final":
                 ai_message = data["result"]

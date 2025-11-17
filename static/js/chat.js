@@ -21,7 +21,7 @@ function updateTemp(value) {
     document.getElementById('tempValue').textContent = value;
 }
 
-function addMessage(role, content) {
+function addMessage(role, content, responseTime = null) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
@@ -35,6 +35,15 @@ function addMessage(role, content) {
     contentDiv.innerHTML = `<strong>${label}:</strong> ${formattedContent}`;
 
     messageDiv.appendChild(contentDiv);
+
+    // Add response time indicator if provided
+    if (responseTime !== null && role === 'assistant') {
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'response-time';
+        timeDiv.textContent = `${responseTime}ms`;
+        messageDiv.appendChild(timeDiv);
+    }
+
     chatMessages.appendChild(messageDiv);
 
     // Scroll to bottom
@@ -84,6 +93,9 @@ async function sendMessage() {
     // Show typing indicator
     showTypingIndicator();
 
+    // Track request start time
+    const startTime = performance.now();
+
     try {
         const researchMode = document.getElementById('researchMode').checked;
         const response = await fetch('/chat', {
@@ -100,6 +112,10 @@ async function sendMessage() {
         });
 
         const data = await response.json();
+
+        // Calculate response time
+        const endTime = performance.now();
+        const responseTime = Math.round(endTime - startTime);
 
         // Remove typing indicator
         removeTypingIndicator();
@@ -120,8 +136,8 @@ async function sendMessage() {
                 // Not JSON, use message as-is
             }
 
-            // Add AI response to UI
-            addMessage('assistant', displayMessage);
+            // Add AI response to UI with response time
+            addMessage('assistant', displayMessage, responseTime);
 
             // Update conversation history
             conversationHistory = data.conversation_history;
