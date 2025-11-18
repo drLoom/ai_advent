@@ -117,6 +117,17 @@ body {
     text-align: right;
 }
 
+.message-metadata {
+    font-size: 11px;
+    color: #868e96;
+    margin-top: 6px;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
 .chat-input-container {
     border-top: 1px solid #e9ecef;
     padding: 20px;

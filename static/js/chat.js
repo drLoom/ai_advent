@@ -21,7 +21,7 @@ function updateTemp(value) {
     document.getElementById('tempValue').textContent = value;
 }
 
-function addMessage(role, content, responseTime = null) {
+function addMessage(role, content, responseTime = null, usage = null) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
@@ -36,12 +36,26 @@ function addMessage(role, content, responseTime = null) {
 
     messageDiv.appendChild(contentDiv);
 
-    // Add response time indicator if provided
-    if (responseTime !== null && role === 'assistant') {
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'response-time';
-        timeDiv.textContent = `${responseTime}ms`;
-        messageDiv.appendChild(timeDiv);
+    // Add metadata (response time and token usage) if provided
+    if (role === 'assistant' && (responseTime !== null || usage !== null)) {
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'message-metadata';
+
+        const metaParts = [];
+
+        if (responseTime !== null) {
+            metaParts.push(`⏱️ ${responseTime}ms`);
+        }
+
+        if (usage && (usage.prompt_tokens || usage.completion_tokens || usage.total_tokens)) {
+            const inputTokens = usage.prompt_tokens || 0;
+            const outputTokens = usage.completion_tokens || 0;
+            const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+            metaParts.push(`📊 ${inputTokens} in / ${outputTokens} out / ${totalTokens} total`);
+        }
+
+        metaDiv.textContent = metaParts.join(' • ');
+        messageDiv.appendChild(metaDiv);
     }
 
     chatMessages.appendChild(messageDiv);
@@ -136,8 +150,8 @@ async function sendMessage() {
                 // Not JSON, use message as-is
             }
 
-            // Add AI response to UI with response time
-            addMessage('assistant', displayMessage, responseTime);
+            // Add AI response to UI with response time and token usage
+            addMessage('assistant', displayMessage, responseTime, data.usage);
 
             // Update conversation history
             conversationHistory = data.conversation_history;

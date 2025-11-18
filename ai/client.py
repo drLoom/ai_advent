@@ -1,6 +1,9 @@
 import os
+import logging
 import requests
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 class OpenRouterClient:
@@ -32,7 +35,11 @@ class OpenRouterClient:
         }
 
     def send_chat_completion(
-        self, messages, model="kwaipilot/kat-coder-pro:free", temperature=0.7, response_format=None
+        self,
+        messages,
+        model="kwaipilot/kat-coder-pro:free",
+        temperature=0.7,
+        response_format=None
     ):
         """
         Send a chat completion request to OpenRouter API.
