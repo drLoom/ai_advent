@@ -83,6 +83,16 @@ body {
     align-self: flex-start;
 }
 
+.message.validation {
+    align-self: flex-start;
+    max-width: 80%;
+}
+
+.message.transformation {
+    align-self: flex-start;
+    max-width: 80%;
+}
+
 .message-content {
     padding: 12px 16px;
     border-radius: 12px;
@@ -100,6 +110,50 @@ body {
     background: #f1f3f5;
     color: #333;
     border-bottom-left-radius: 4px;
+}
+
+.message.validation .message-content {
+    background: #e7f5ff;
+    color: #1971c2;
+    border: 1px solid #74c0fc;
+    border-bottom-left-radius: 4px;
+}
+
+.message.transformation .message-content {
+    background: #f3f0ff;
+    color: #5f3dc4;
+    border: 1px solid #b197fc;
+    border-bottom-left-radius: 4px;
+}
+
+.table-container {
+    margin-top: 12px;
+    overflow-x: auto;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.table-container th,
+.table-container td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+.table-container th {
+    background: #5f3dc4;
+    color: white;
+    font-weight: 600;
+}
+
+.table-container tr:nth-child(even) {
+    background: #f8f9fa;
 }
 
 .message-content strong {

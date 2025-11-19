@@ -30,8 +30,9 @@ function addMessage(role, content, responseTime = null, usage = null) {
     contentDiv.className = 'message-content';
 
     const label = role === 'user' ? 'You' : 'AI';
-    // Preserve newlines by replacing them with <br>
-    const formattedContent = escapeHtml(content).replace(/\n/g, '<br>');
+    // Preserve newlines and convert **text** to bold
+    let formattedContent = escapeHtml(content).replace(/\n/g, '<br>');
+    formattedContent = formattedContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     contentDiv.innerHTML = `<strong>${label}:</strong> ${formattedContent}`;
 
     messageDiv.appendChild(contentDiv);
@@ -51,6 +52,93 @@ function addMessage(role, content, responseTime = null, usage = null) {
             const inputTokens = usage.prompt_tokens || 0;
             const outputTokens = usage.completion_tokens || 0;
             const totalTokens = usage.total_tokens || (inputTokens + outputTokens);
+            metaParts.push(`📊 ${inputTokens} in / ${outputTokens} out / ${totalTokens} total`);
+        }
+
+        metaDiv.textContent = metaParts.join(' • ');
+        messageDiv.appendChild(metaDiv);
+    }
+
+    chatMessages.appendChild(messageDiv);
+
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addValidationMessage(validation) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message validation';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // Preserve newlines and convert **text** to bold
+    let formattedContent = escapeHtml(validation.message).replace(/\n/g, '<br>');
+    formattedContent = formattedContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    contentDiv.innerHTML = `<strong>🔍 Validator:</strong> ${formattedContent}`;
+
+    messageDiv.appendChild(contentDiv);
+
+    // Add metadata for validation
+    if (validation.usage || validation.model) {
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'message-metadata';
+
+        const metaParts = [];
+
+        if (validation.model) {
+            metaParts.push(`🤖 ${validation.model}`);
+        }
+
+        if (validation.usage && (validation.usage.prompt_tokens || validation.usage.completion_tokens || validation.usage.total_tokens)) {
+            const inputTokens = validation.usage.prompt_tokens || 0;
+            const outputTokens = validation.usage.completion_tokens || 0;
+            const totalTokens = validation.usage.total_tokens || (inputTokens + outputTokens);
+            metaParts.push(`📊 ${inputTokens} in / ${outputTokens} out / ${totalTokens} total`);
+        }
+
+        metaDiv.textContent = metaParts.join(' • ');
+        messageDiv.appendChild(metaDiv);
+    }
+
+    chatMessages.appendChild(messageDiv);
+
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addTransformationMessage(transformation) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message transformation';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // Extract HTML table from the message (remove markdown code blocks if present)
+    let tableHtml = transformation.message;
+    tableHtml = tableHtml.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+
+    contentDiv.innerHTML = `<strong>📊 Table View:</strong><div class="table-container">${tableHtml}</div>`;
+
+    messageDiv.appendChild(contentDiv);
+
+    // Add metadata for transformation
+    if (transformation.usage || transformation.model) {
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'message-metadata';
+
+        const metaParts = [];
+
+        if (transformation.model) {
+            metaParts.push(`🤖 ${transformation.model}`);
+        }
+
+        if (transformation.usage && (transformation.usage.prompt_tokens || transformation.usage.completion_tokens || transformation.usage.total_tokens)) {
+            const inputTokens = transformation.usage.prompt_tokens || 0;
+            const outputTokens = transformation.usage.completion_tokens || 0;
+            const totalTokens = transformation.usage.total_tokens || (inputTokens + outputTokens);
             metaParts.push(`📊 ${inputTokens} in / ${outputTokens} out / ${totalTokens} total`);
         }
 
@@ -152,6 +240,16 @@ async function sendMessage() {
 
             // Add AI response to UI with response time and token usage
             addMessage('assistant', displayMessage, responseTime, data.usage);
+
+            // Add validation message if present
+            if (data.validation) {
+                addValidationMessage(data.validation);
+            }
+
+            // Add transformation message if present
+            if (data.transformation) {
+                addTransformationMessage(data.transformation);
+            }
 
             // Update conversation history
             conversationHistory = data.conversation_history;
