@@ -29,11 +29,9 @@ function addMessage(role, content, responseTime = null, usage = null) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
 
-    const label = role === 'user' ? 'You' : 'AI';
-    // Preserve newlines and convert **text** to bold
+    // Show pure content without labels or formatting
     let formattedContent = escapeHtml(content).replace(/\n/g, '<br>');
-    formattedContent = formattedContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    contentDiv.innerHTML = `<strong>${label}:</strong> ${formattedContent}`;
+    contentDiv.innerHTML = formattedContent;
 
     messageDiv.appendChild(contentDiv);
 
@@ -65,86 +63,23 @@ function addMessage(role, content, responseTime = null, usage = null) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function addValidationMessage(validation) {
+function addCompressionMessage(compression) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'message validation';
+    messageDiv.className = 'message compression';
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
 
-    // Preserve newlines and convert **text** to bold
-    let formattedContent = escapeHtml(validation.message).replace(/\n/g, '<br>');
-    formattedContent = formattedContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    contentDiv.innerHTML = `<strong>🔍 Validator:</strong> ${formattedContent}`;
+    const tokensaved = compression.estimated_tokens_saved || 0;
+    const ratio = compression.compression_ratio || 0;
+
+    contentDiv.innerHTML = `<strong>🗜️ History Compressed:</strong>
+        Compressed ${compression.messages_compressed} messages into a summary,
+        keeping ${compression.messages_kept} recent messages.
+        Saved ~${tokensaved} tokens (${ratio}% of original size).`;
 
     messageDiv.appendChild(contentDiv);
-
-    // Add metadata for validation
-    if (validation.usage || validation.model) {
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'message-metadata';
-
-        const metaParts = [];
-
-        if (validation.model) {
-            metaParts.push(`🤖 ${validation.model}`);
-        }
-
-        if (validation.usage && (validation.usage.prompt_tokens || validation.usage.completion_tokens || validation.usage.total_tokens)) {
-            const inputTokens = validation.usage.prompt_tokens || 0;
-            const outputTokens = validation.usage.completion_tokens || 0;
-            const totalTokens = validation.usage.total_tokens || (inputTokens + outputTokens);
-            metaParts.push(`📊 ${inputTokens} in / ${outputTokens} out / ${totalTokens} total`);
-        }
-
-        metaDiv.textContent = metaParts.join(' • ');
-        messageDiv.appendChild(metaDiv);
-    }
-
-    chatMessages.appendChild(messageDiv);
-
-    // Scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function addTransformationMessage(transformation) {
-    const chatMessages = document.getElementById('chatMessages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message transformation';
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-
-    // Extract HTML table from the message (remove markdown code blocks if present)
-    let tableHtml = transformation.message;
-    tableHtml = tableHtml.replace(/```html\n?/g, '').replace(/```\n?/g, '');
-
-    contentDiv.innerHTML = `<strong>📊 Table View:</strong><div class="table-container">${tableHtml}</div>`;
-
-    messageDiv.appendChild(contentDiv);
-
-    // Add metadata for transformation
-    if (transformation.usage || transformation.model) {
-        const metaDiv = document.createElement('div');
-        metaDiv.className = 'message-metadata';
-
-        const metaParts = [];
-
-        if (transformation.model) {
-            metaParts.push(`🤖 ${transformation.model}`);
-        }
-
-        if (transformation.usage && (transformation.usage.prompt_tokens || transformation.usage.completion_tokens || transformation.usage.total_tokens)) {
-            const inputTokens = transformation.usage.prompt_tokens || 0;
-            const outputTokens = transformation.usage.completion_tokens || 0;
-            const totalTokens = transformation.usage.total_tokens || (inputTokens + outputTokens);
-            metaParts.push(`📊 ${inputTokens} in / ${outputTokens} out / ${totalTokens} total`);
-        }
-
-        metaDiv.textContent = metaParts.join(' • ');
-        messageDiv.appendChild(metaDiv);
-    }
 
     chatMessages.appendChild(messageDiv);
 
@@ -200,6 +135,7 @@ async function sendMessage() {
 
     try {
         const researchMode = document.getElementById('researchMode').checked;
+        const compressionEnabled = document.getElementById('compressionEnabled').checked;
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {
@@ -209,11 +145,14 @@ async function sendMessage() {
                 message: message,
                 temperature: temperature,
                 conversation_history: conversationHistory,
-                research: researchMode
+                research: researchMode,
+                enable_compression: compressionEnabled
             })
         });
 
         const data = await response.json();
+
+        console.log('Full response data:', data);
 
         // Calculate response time
         const endTime = performance.now();
@@ -241,14 +180,10 @@ async function sendMessage() {
             // Add AI response to UI with response time and token usage
             addMessage('assistant', displayMessage, responseTime, data.usage);
 
-            // Add validation message if present
-            if (data.validation) {
-                addValidationMessage(data.validation);
-            }
-
-            // Add transformation message if present
-            if (data.transformation) {
-                addTransformationMessage(data.transformation);
+            // Add compression message if present
+            if (data.compression) {
+                console.log('Compression data received:', data.compression);
+                addCompressionMessage(data.compression);
             }
 
             // Update conversation history

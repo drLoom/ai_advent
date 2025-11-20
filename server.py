@@ -13,12 +13,6 @@ logging.basicConfig(
 MODEL = 'nvidia/nemotron-nano-12b-v2-vl'
 # MODEL = 'google/gemini-2.5-pro'
 
-# Validator model - set to None to disable validation
-VALIDATOR_MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
-
-# Transformer model - set to None to disable table transformation
-TRANSFORMER_MODEL = 'google/gemini-2.5-pro'
-
 app = Flask(__name__)
 
 
@@ -49,6 +43,7 @@ def chat():
         conversation_history = data.get('conversation_history', [])
         short = data.get('short', False)
         research = data.get('research', False)
+        enable_compression = data.get('enable_compression', True)
 
         if not user_message:
             return jsonify({
@@ -58,8 +53,7 @@ def chat():
         conversation = Conversation(
             model=MODEL,
             temperature=temperature,
-            validator_model=VALIDATOR_MODEL,
-            transformer_model=TRANSFORMER_MODEL
+            enable_compression=enable_compression
         )
         response = conversation.process_message(
             user_message=user_message,
