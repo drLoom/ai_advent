@@ -1,6 +1,7 @@
 import logging
 from flask import Flask, request, jsonify, render_template
 from conversation import Conversation
+from mcp_client import MCPClient
 
 # Configure logging
 logging.basicConfig(
@@ -15,6 +16,9 @@ MODEL = 'nvidia/nemotron-nano-12b-v2-vl'
 
 app = Flask(__name__)
 
+# Initialize MCP client (default: filesystem, change to mcp_server_news.py for news)
+mcp_client = MCPClient("mcp_server_news.py")
+
 
 @app.route('/')
 def index():
@@ -26,6 +30,110 @@ def index():
 def health_check():
     """Health check endpoint."""
     return jsonify({"status": "healthy", "message": "Server is running"}), 200
+
+
+@app.route('/mcp/tools', methods=['GET'])
+def get_mcp_tools():
+    """Get available MCP tools."""
+    try:
+        # Connect if not already connected
+        if not mcp_client.connected:
+            mcp_client.connect()
+
+        tools = mcp_client.get_tools()
+        return jsonify({
+            "success": True,
+            "connected": mcp_client.connected,
+            "tools": tools
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/mcp/call', methods=['POST'])
+def call_mcp_tool():
+    """Call an MCP tool."""
+    try:
+        data = request.get_json()
+        tool_name = data.get('tool_name')
+        arguments = data.get('arguments', {})
+
+        if not tool_name:
+            return jsonify({
+                "success": False,
+                "error": "Missing tool_name"
+            }), 400
+
+        # Connect if not already connected
+        if not mcp_client.connected:
+            mcp_client.connect()
+
+        result = mcp_client.call_tool(tool_name, arguments)
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/summarize', methods=['POST'])
+def summarize_article():
+    """Summarize article content using AI."""
+    try:
+        data = request.get_json()
+        article_content = data.get('content')
+        temperature = data.get('temperature', 0.7)
+
+        if not article_content:
+            return jsonify({
+                "success": False,
+                "error": "Missing article content"
+            }), 400
+
+        # Create conversation instance
+        conversation = Conversation(
+            model=MODEL,
+            temperature=temperature,
+            enable_compression=False  # No history for single summarization
+        )
+
+        # Process summarization request
+        response = conversation.process_message(
+            user_message=f"""Please provide a well-structured, concise summary of this article.
+
+Format your response as:
+1. Main Points (3-5 bullet points)
+2. Brief Summary (2-3 sentences)
+
+Article content:
+{article_content}""",
+            conversation_history=[],
+            short=False,
+            research=False
+        )
+
+        if response.get('error'):
+            return jsonify({
+                "success": False,
+                "error": response['error']
+            }), 500
+
+        return jsonify({
+            "success": True,
+            "summary": response['message']
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @app.route('/chat', methods=['POST'])

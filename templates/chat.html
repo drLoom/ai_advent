@@ -7,15 +7,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>AI Chat</h1>
-            <div class="model-info">
-                <span id="model-name">{{ model }}</span>
+    <div class="main-layout">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>AI Chat</h1>
+                <div class="model-info">
+                    <span id="model-name">{{ model }}</span>
+                </div>
             </div>
-        </div>
 
-        <div class="chat-messages" id="chatMessages">
+            <div class="chat-messages" id="chatMessages">
             <div class="message assistant">
                 <div class="message-content">
                     Hello! I'm your AI assistant. How can I help you today?
@@ -54,6 +55,22 @@
         </div>
     </div>
 
+    <div class="mcp-sidebar">
+        <div class="mcp-header">
+            <h2>MCP Tools</h2>
+            <button onclick="refreshMCPTools()" class="refresh-btn">Refresh</button>
+        </div>
+        <div class="mcp-status" id="mcpStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">Disconnected</span>
+        </div>
+        <div class="mcp-tools-list" id="mcpToolsList">
+            <div class="loading-tools">Loading...</div>
+        </div>
+    </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mcp.js') }}"></script>
 </body>
 </html>
