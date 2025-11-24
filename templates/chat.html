@@ -70,6 +70,23 @@
     </div>
     </div>
 
+    <script>
+        // Model configuration
+        const MODEL = '{{ model }}';
+        const RESEARCH_MODEL = '{{ research_model }}';
+
+        // Update model display when research mode changes
+        document.addEventListener('DOMContentLoaded', () => {
+            const researchModeCheckbox = document.getElementById('researchMode');
+            const modelNameDisplay = document.getElementById('model-name');
+
+            researchModeCheckbox.addEventListener('change', (e) => {
+                modelNameDisplay.textContent = e.target.checked ? RESEARCH_MODEL : MODEL;
+            });
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/chat-params.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mcp-params.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
     <script src="{{ url_for('static', filename='js/mcp.js') }}"></script>
 </body>

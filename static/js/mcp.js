@@ -108,20 +108,15 @@ function closeToolDialog() {
 
 async function executeTool(toolName) {
     const tool = currentTools.find(t => t.name === toolName);
-    const props = tool.parameters?.properties || {};
 
-    const toolArgs = {};
-    for (const key of Object.keys(props)) {
-        const input = document.getElementById(`param-${key}`);
-        if (input && input.value) {
-            // Convert to correct type based on schema
-            const propType = props[key].type;
-            if (propType === 'number' || propType === 'integer') {
-                toolArgs[key] = Number(input.value);
-            } else {
-                toolArgs[key] = input.value;
-            }
-        }
+    // Use MCPToolParameters class to parse parameters
+    const params = new MCPToolParameters(toolName, tool);
+
+    // Validate required parameters
+    const validation = params.validate();
+    if (!validation.valid) {
+        alert(`Missing required parameters: ${validation.missing.join(', ')}`);
+        return;
     }
 
     const resultDiv = document.getElementById('toolResult');
@@ -134,10 +129,7 @@ async function executeTool(toolName) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                tool_name: toolName,
-                arguments: toolArgs
-            })
+            body: JSON.stringify(params.toRequestBody())
         });
 
         const data = await response.json();
@@ -162,22 +154,15 @@ async function executeTool(toolName) {
 
 async function summarizeArticle(articleContent, resultDiv) {
     try {
-        // Get temperature value
-        let temp = 0.7;
-        const temperatureEl = document.getElementById('temperature');
-        if (temperatureEl && temperatureEl.value) {
-            temp = parseFloat(temperatureEl.value);
-        }
+        // Use SummarizationParameters class to build request
+        const params = new SummarizationParameters();
 
         const response = await fetch('/summarize', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                content: articleContent,
-                temperature: temp
-            })
+            body: JSON.stringify(params.toRequestBody(articleContent))
         });
 
         const data = await response.json();

@@ -112,9 +112,14 @@ function removeTypingIndicator() {
 async function sendMessage() {
     const messageInput = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
-    const message = messageInput.value.trim();
 
-    if (!message) return;
+    // Use ChatParameters class to extract parameters
+    const params = new ChatParameters();
+
+    // Validate message is present
+    if (!params.isValid()) return;
+
+    const message = params.getMessage();
 
     // Disable input
     messageInput.disabled = true;
@@ -123,9 +128,8 @@ async function sendMessage() {
     // Add user message to UI
     addMessage('user', message);
 
-    // Clear input
-    messageInput.value = '';
-    messageInput.style.height = 'auto';
+    // Clear input using params class
+    params.clearMessage();
 
     // Show typing indicator
     showTypingIndicator();
@@ -134,20 +138,12 @@ async function sendMessage() {
     const startTime = performance.now();
 
     try {
-        const researchMode = document.getElementById('researchMode').checked;
-        const compressionEnabled = document.getElementById('compressionEnabled').checked;
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: message,
-                temperature: temperature,
-                conversation_history: conversationHistory,
-                research: researchMode,
-                enable_compression: compressionEnabled
-            })
+            body: JSON.stringify(params.toRequestBody(conversationHistory))
         });
 
         const data = await response.json();

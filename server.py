@@ -2,6 +2,12 @@ import logging
 from flask import Flask, request, jsonify, render_template
 from conversation import Conversation
 from mcp_client import MCPClient
+from params import (
+    ChatRequestParams,
+    MCPToolRequestParams,
+    SummarizationRequestParams,
+    ValidationError
+)
 
 # Configure logging
 logging.basicConfig(
@@ -14,6 +20,9 @@ logging.basicConfig(
 MODEL = 'nvidia/nemotron-nano-12b-v2-vl'
 # MODEL = 'google/gemini-2.5-pro'
 
+# Research mode requires structured outputs - use a model that supports it
+RESEARCH_MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
+
 app = Flask(__name__)
 
 # Initialize MCP client (default: filesystem, change to mcp_server_news.py for news)
@@ -23,7 +32,7 @@ mcp_client = MCPClient("mcp_server_news.py")
 @app.route('/')
 def index():
     """Render the chat UI."""
-    return render_template('chat.html', model=MODEL)
+    return render_template('chat.html', model=MODEL, research_model=RESEARCH_MODEL)
 
 
 @app.route('/health', methods=['GET'])
@@ -58,22 +67,22 @@ def get_mcp_tools():
 def call_mcp_tool():
     """Call an MCP tool."""
     try:
-        data = request.get_json()
-        tool_name = data.get('tool_name')
-        arguments = data.get('arguments', {})
-
-        if not tool_name:
-            return jsonify({
-                "success": False,
-                "error": "Missing tool_name"
-            }), 400
+        # Use MCPToolRequestParams to parse and validate request
+        params = MCPToolRequestParams.from_request(request.get_json())
 
         # Connect if not already connected
         if not mcp_client.connected:
             mcp_client.connect()
 
-        result = mcp_client.call_tool(tool_name, arguments)
+        # Execute tool with validated parameters
+        result = mcp_client.call_tool(params.tool_name, params.arguments)
         return jsonify(result), 200
+
+    except ValidationError as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 400
 
     except Exception as e:
         return jsonify({
@@ -86,20 +95,13 @@ def call_mcp_tool():
 def summarize_article():
     """Summarize article content using AI."""
     try:
-        data = request.get_json()
-        article_content = data.get('content')
-        temperature = data.get('temperature', 0.7)
-
-        if not article_content:
-            return jsonify({
-                "success": False,
-                "error": "Missing article content"
-            }), 400
+        # Use SummarizationRequestParams to parse and validate request
+        params = SummarizationRequestParams.from_request(request.get_json())
 
         # Create conversation instance
         conversation = Conversation(
             model=MODEL,
-            temperature=temperature,
+            temperature=params.temperature,
             enable_compression=False  # No history for single summarization
         )
 
@@ -112,7 +114,7 @@ Format your response as:
 2. Brief Summary (2-3 sentences)
 
 Article content:
-{article_content}""",
+{params.content}""",
             conversation_history=[],
             short=False,
             research=False
@@ -129,6 +131,12 @@ Article content:
             "summary": response['message']
         }), 200
 
+    except ValidationError as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 400
+
     except Exception as e:
         return jsonify({
             "success": False,
@@ -139,38 +147,34 @@ Article content:
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        data = request.get_json()
+        # Use ChatRequestParams to parse and validate request
+        params = ChatRequestParams.from_request(request.get_json())
 
-        if not data:
-            return jsonify({
-                "error": "Request body must be JSON"
-            }), 400
+        # Use RESEARCH_MODEL for research mode (supports structured outputs)
+        # Otherwise use regular MODEL
+        selected_model = RESEARCH_MODEL if params.research else MODEL
 
-        user_message = data.get('message')
-        temperature = data.get('temperature', 0.7)
-        conversation_history = data.get('conversation_history', [])
-        short = data.get('short', False)
-        research = data.get('research', False)
-        enable_compression = data.get('enable_compression', True)
-
-        if not user_message:
-            return jsonify({
-                "error": "Missing required field: 'message'"
-            }), 400
-
+        # Create conversation with validated parameters
         conversation = Conversation(
-            model=MODEL,
-            temperature=temperature,
-            enable_compression=enable_compression
+            model=selected_model,
+            temperature=params.temperature,
+            enable_compression=params.enable_compression
         )
+
+        # Process message
         response = conversation.process_message(
-            user_message=user_message,
-            conversation_history=conversation_history,
-            short=short,
-            research=research
+            user_message=params.message,
+            conversation_history=params.conversation_history,
+            short=params.short,
+            research=params.research
         )
 
         return jsonify(response), 200
+
+    except ValidationError as e:
+        return jsonify({
+            "error": str(e)
+        }), 400
 
     except Exception as e:
         return jsonify({
@@ -197,6 +201,8 @@ def method_not_allowed(error):
 if __name__ == '__main__':
     print("🚀 Starting HTTP server...")
     print("📡 Server will forward requests to OpenRouter API")
+    print(f"🤖 Default model: {MODEL}")
+    print(f"🔬 Research model: {RESEARCH_MODEL}")
     print("🔗 Health check: http://localhost:3333/health")
     print("💬 Chat endpoint: http://localhost:3333/chat (POST)")
     print("\nPress Ctrl+C to stop the server\n")
