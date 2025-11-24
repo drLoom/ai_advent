@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Optional, List, Dict
 from ai.client import OpenRouterClient
 from ai.models.research_response import ResearchResponse
 from ai.history_compressor import HistoryCompressor
@@ -41,7 +42,8 @@ class Conversation:
         temperature: float = 0.7,
         enable_compression: bool = True,
         compression_threshold: int = 10,
-        keep_recent: int = 2
+        keep_recent: int = 2,
+        mcp_client=None
     ):
         """
         Initialize a conversation handler.
@@ -52,10 +54,12 @@ class Conversation:
             enable_compression: Enable history compression (default: True)
             compression_threshold: Number of messages before compression (default: 10)
             keep_recent: Number of recent messages to keep uncompressed (default: 4)
+            mcp_client: Optional MCP client for tool calling
         """
         self.model = model
         self.temperature = temperature
         self.client = OpenRouterClient()
+        self.mcp_client = mcp_client
 
         # Initialize history compressor
         self.enable_compression = enable_compression
@@ -67,6 +71,28 @@ class Conversation:
             )
         else:
             self.compressor = None
+
+    def _convert_mcp_tools_to_openrouter_format(self, mcp_tools: List[Dict]) -> List[Dict]:
+        """
+        Convert MCP tool definitions to OpenRouter function calling format.
+
+        Args:
+            mcp_tools: List of MCP tool definitions
+
+        Returns:
+            List of tools in OpenRouter format
+        """
+        openrouter_tools = []
+        for tool in mcp_tools:
+            openrouter_tools.append({
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["parameters"]
+                }
+            })
+        return openrouter_tools
 
     def process_message(
         self,
@@ -112,44 +138,123 @@ class Conversation:
             "content": user_message
         })
 
+        # Get MCP tools if available (but not in research mode, as it conflicts with response_format)
+        tools = None
+        if not research and self.mcp_client and self.mcp_client.connected:
+            try:
+                mcp_tools = self.mcp_client.get_tools()
+                if mcp_tools:
+                    tools = self._convert_mcp_tools_to_openrouter_format(mcp_tools)
+                    logger.info(f"Loaded {len(tools)} tools for AI")
+            except Exception as e:
+                logger.error(f"Failed to get MCP tools: {e}")
+
         response_format = ResearchResponse if research else None
 
-        logger.info(f"request temperature: {self.temperature}, messages: {messages}")
+        # Tool calling loop - continue until no more tool calls
+        max_iterations = 10
+        iteration = 0
+        total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
-        response_data = self.client.send_chat_completion(
-            messages, model=self.model, temperature=self.temperature, response_format=response_format
-        )
+        while iteration < max_iterations:
+            iteration += 1
+            logger.info(f"Tool calling iteration {iteration}/{max_iterations}")
+            logger.info(f"request temperature: {self.temperature}, messages count: {len(messages)}")
 
-        logger.info(f"AI response data: {response_data}")
+            response_data = self.client.send_chat_completion(
+                messages,
+                model=self.model,
+                temperature=self.temperature,
+                response_format=response_format,
+                tools=tools
+            )
 
-        ai_message = response_data["choices"][0]["message"]["content"]
+            logger.info(f"AI response data: {response_data}")
 
-        if research:
-            data = json.loads(ai_message)
-            if data["status"] == "final":
-                ai_message = data["result"]
-            else:
-                ai_message = data["question"]
+            # Accumulate usage stats
+            if "usage" in response_data:
+                for key in ["prompt_tokens", "completion_tokens", "total_tokens"]:
+                    total_usage[key] += response_data["usage"].get(key, 0)
 
-        # Build response based on short flag
-        if short:
-            return {
-                "success": True,
-                "message": ai_message
-            }
-        else:
-            response = {
-                "success": True,
-                "message": ai_message,
-                "model": self.model,
-                "usage": response_data.get("usage", {}),
-                "conversation_history": messages + [{
+            message = response_data["choices"][0]["message"]
+
+            # Check if the model wants to call tools
+            tool_calls = message.get("tool_calls")
+
+            if tool_calls:
+                logger.info(f"Model requested {len(tool_calls)} tool calls")
+
+                # Add assistant message with tool calls to history
+                messages.append({
                     "role": "assistant",
-                    "content": ai_message
-                }]
-            }
+                    "content": message.get("content") or "",
+                    "tool_calls": tool_calls
+                })
 
-            if compression_metrics:
-                response["compression"] = compression_metrics
+                # Execute each tool call
+                for tool_call in tool_calls:
+                    tool_name = tool_call["function"]["name"]
+                    tool_args = json.loads(tool_call["function"]["arguments"])
+                    tool_id = tool_call["id"]
 
-            return response
+                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+
+                    # Call the MCP tool
+                    tool_result = self.mcp_client.call_tool(tool_name, tool_args)
+
+                    # Extract the actual result string from the MCP response
+                    if tool_result.get("success") and "result" in tool_result:
+                        result_content = tool_result["result"]
+                    else:
+                        result_content = json.dumps(tool_result)
+
+                    # Add tool result to messages
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_id,
+                        "content": result_content
+                    })
+
+                # Continue loop to get next response
+                continue
+            else:
+                # No tool calls, we have the final response
+                ai_message = message.get("content", "")
+
+                if research:
+                    data = json.loads(ai_message)
+                    if data["status"] == "final":
+                        ai_message = data["result"]
+                    else:
+                        ai_message = data["question"]
+
+                # Build response based on short flag
+                if short:
+                    return {
+                        "success": True,
+                        "message": ai_message
+                    }
+                else:
+                    response = {
+                        "success": True,
+                        "message": ai_message,
+                        "model": self.model,
+                        "usage": total_usage,
+                        "conversation_history": messages + [{
+                            "role": "assistant",
+                            "content": ai_message
+                        }]
+                    }
+
+                    if compression_metrics:
+                        response["compression"] = compression_metrics
+
+                    return response
+
+        # Max iterations reached
+        logger.warning(f"Max tool calling iterations ({max_iterations}) reached")
+        return {
+            "success": False,
+            "error": "Max tool calling iterations reached",
+            "message": "I apologize, but I encountered too many tool calls and need to stop."
+        }

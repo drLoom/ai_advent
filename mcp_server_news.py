@@ -12,9 +12,13 @@ import feedparser
 import httpx
 from bs4 import BeautifulSoup
 from lxml import html
+from storage.article_storage import StoreToTxt
 
 
 app = Server("news-parser")
+
+# Initialize article storage
+article_storage = StoreToTxt()
 
 
 def parse_rss_feed(url: str, max_articles: int = 10) -> dict:
@@ -133,10 +137,27 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         if "error" in result:
             return [TextContent(type="text", text=f"Error: {result['error']}")]
 
-        output = f"Title: {result['title']}\n"
-        output += f"URL: {result['url']}\n"
-        output += f"Length: {result['length']} characters\n\n"
-        output += f"Content:\n{result['content']}"
+        # Save article to disk
+        try:
+            saved_path = article_storage.save_article(
+                title=result['title'],
+                content=result['content'],
+                url=result['url'],
+                metadata={'length': result['length']}
+            )
+
+            output = f"Title: {result['title']}\n"
+            output += f"URL: {result['url']}\n"
+            output += f"Saved to: {saved_path}\n"
+            output += f"Length: {result['length']} characters\n\n"
+            output += f"Content:\n{result['content']}"
+        except Exception as e:
+            # If saving fails, still return the content but note the error
+            output = f"Title: {result['title']}\n"
+            output += f"URL: {result['url']}\n"
+            output += f"Warning: Failed to save article - {str(e)}\n"
+            output += f"Length: {result['length']} characters\n\n"
+            output += f"Content:\n{result['content']}"
 
         return [TextContent(type="text", text=output)]
 

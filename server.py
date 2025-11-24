@@ -16,8 +16,9 @@ logging.basicConfig(
 )
 
 # MODEL = 'kwaipilot/kat-coder-pro:free'
-# MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
-MODEL = 'nvidia/nemotron-nano-12b-v2-vl'
+# Use Gemini model for tool calling support
+MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
+# MODEL = 'nvidia/nemotron-nano-12b-v2-vl'  # Doesn't support function calling
 # MODEL = 'google/gemini-2.5-pro'
 
 # Research mode requires structured outputs - use a model that supports it
@@ -154,11 +155,16 @@ def chat():
         # Otherwise use regular MODEL
         selected_model = RESEARCH_MODEL if params.research else MODEL
 
-        # Create conversation with validated parameters
+        # Connect to MCP server if not already connected
+        if not mcp_client.connected:
+            mcp_client.connect()
+
+        # Create conversation with validated parameters and MCP client
         conversation = Conversation(
             model=selected_model,
             temperature=params.temperature,
-            enable_compression=params.enable_compression
+            enable_compression=params.enable_compression,
+            mcp_client=mcp_client
         )
 
         # Process message

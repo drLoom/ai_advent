@@ -39,7 +39,8 @@ class OpenRouterClient:
         messages,
         model="kwaipilot/kat-coder-pro:free",
         temperature=0.7,
-        response_format=None
+        response_format=None,
+        tools=None
     ):
         """
         Send a chat completion request to OpenRouter API.
@@ -49,6 +50,7 @@ class OpenRouterClient:
             model: Model to use for completion
             temperature: Temperature parameter for response generation
             response_format: Optional response format schema (Pydantic model)
+            tools: Optional list of tools available for the model to use
 
         Returns:
             dict: Response data from OpenRouter API
@@ -69,6 +71,10 @@ class OpenRouterClient:
                     "strict": True
                 }
             }
+
+        # Add tools if provided
+        if tools:
+            payload["tools"] = tools
 
         response = requests.post(self.URL, headers=headers, json=payload, timeout=30)
 
