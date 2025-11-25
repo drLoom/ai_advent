@@ -1,7 +1,7 @@
 import logging
 from flask import Flask, request, jsonify, render_template
 from conversation import Conversation
-from servers.client import MCPClient
+from servers.client_manager import MCPClientManager
 from params import (
     ChatRequestParams,
     MCPToolRequestParams,
@@ -26,9 +26,13 @@ RESEARCH_MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
 
 app = Flask(__name__)
 
-# Initialize MCP client
-# (default: filesystem, change to servers/server_news.py for news)
-mcp_client = MCPClient("servers/server_news.py")
+# Initialize MCP client manager with all servers
+mcp_client = MCPClientManager([
+    "servers/server_news.py",
+    "servers/server_articles.py",
+    "servers/server_reviews.py",
+    "servers/server_filesystem.py"
+])
 
 
 @app.route('/')

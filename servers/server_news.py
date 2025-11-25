@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """MCP server for news parsing and article extraction."""
 import asyncio
+import sys
+from pathlib import Path
 from urllib.parse import urljoin
 from mcp.server import Server
 from mcp.types import Tool, TextContent
@@ -8,13 +10,14 @@ from mcp.server.stdio import stdio_server
 import httpx
 from bs4 import BeautifulSoup
 from lxml import html
-from storage.article_storage import StoreToTxt
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from storage import ArticleStorage
 
 
 app = Server("news-parser")
 
-# Initialize article storage
-article_storage = StoreToTxt()
+article_storage = ArticleStorage()
 
 
 def fetch_article_content(url: str) -> dict:
@@ -108,9 +111,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         if "error" in result:
             return [TextContent(type="text", text=f"Error: {result['error']}")]
 
-        # Save article to disk
         try:
-            saved_path = article_storage.save_article(
+            article_id = article_storage.save_article(
                 title=result['title'],
                 content=result['content'],
                 url=result['url'],
@@ -119,11 +121,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
             output = f"Title: {result['title']}\n"
             output += f"URL: {result['url']}\n"
-            output += f"Saved to: {saved_path}\n"
+            output += f"Saved to database with ID: {article_id}\n"
             output += f"Length: {result['length']} characters\n\n"
             output += f"Content:\n{result['content']}"
         except Exception as e:
-            # If saving fails, still return the content but note the error
             output = f"Title: {result['title']}\n"
             output += f"URL: {result['url']}\n"
             output += f"Warning: Failed to save article - {str(e)}\n"

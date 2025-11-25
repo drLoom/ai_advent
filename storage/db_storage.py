@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from .models import Base, Article
+from .models import Base, Article, Review
 
 
 class ArticleStorage:
@@ -61,7 +61,7 @@ class ArticleStorage:
                 title=title,
                 content=content,
                 url=url,
-                metadata=json.dumps(metadata) if metadata else None,
+                meta_data=json.dumps(metadata) if metadata else None,
                 created_at=datetime.now()
             )
             session.add(article)
@@ -223,9 +223,128 @@ class ArticleStorage:
             if url is not None:
                 article.url = url
             if metadata is not None:
-                article.metadata = json.dumps(metadata)
+                article.meta_data = json.dumps(metadata)
 
             session.commit()
             return True
+        finally:
+            session.close()
+
+    def save_review(
+        self,
+        article_id: int,
+        review_text: str,
+        model_name: str
+    ) -> Optional[int]:
+        """
+        Save LLM review for an article.
+
+        Args:
+            article_id: Article ID
+            review_text: Review/summary text
+            model_name: Name of the LLM model used
+
+        Returns:
+            Review ID if saved successfully, None if article doesn't exist
+        """
+        session = self._get_session()
+        try:
+            article = session.query(Article).filter(Article.id == article_id).first()
+            if not article:
+                return None
+
+            review = Review(
+                article_id=article_id,
+                review_text=review_text,
+                model_name=model_name,
+                created_at=datetime.now()
+            )
+            session.add(review)
+            session.commit()
+            session.refresh(review)
+            return review.id
+        finally:
+            session.close()
+
+    def get_reviews_for_article(self, article_id: int) -> List[dict]:
+        """
+        Get all reviews for a specific article.
+
+        Args:
+            article_id: Article ID
+
+        Returns:
+            List of review dictionaries
+        """
+        session = self._get_session()
+        try:
+            reviews = session.query(Review).filter(
+                Review.article_id == article_id
+            ).order_by(Review.created_at.desc()).all()
+            return [review.to_dict() for review in reviews]
+        finally:
+            session.close()
+
+    def get_review(self, review_id: int) -> Optional[dict]:
+        """
+        Get review by ID.
+
+        Args:
+            review_id: Review ID
+
+        Returns:
+            Review dictionary or None if not found
+        """
+        session = self._get_session()
+        try:
+            review = session.query(Review).filter(Review.id == review_id).first()
+            return review.to_dict() if review else None
+        finally:
+            session.close()
+
+    def delete_review(self, review_id: int) -> bool:
+        """
+        Delete a review by ID.
+
+        Args:
+            review_id: Review ID
+
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        session = self._get_session()
+        try:
+            review = session.query(Review).filter(Review.id == review_id).first()
+            if review:
+                session.delete(review)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
+    def get_article_with_reviews(self, article_id: int) -> Optional[dict]:
+        """
+        Get article with all its reviews.
+
+        Args:
+            article_id: Article ID
+
+        Returns:
+            Dictionary with article and reviews, or None if not found
+        """
+        session = self._get_session()
+        try:
+            article = session.query(Article).filter(Article.id == article_id).first()
+            if not article:
+                return None
+
+            article_dict = article.to_dict()
+            reviews = session.query(Review).filter(
+                Review.article_id == article_id
+            ).order_by(Review.created_at.desc()).all()
+            article_dict['reviews'] = [review.to_dict() for review in reviews]
+
+            return article_dict
         finally:
             session.close()
