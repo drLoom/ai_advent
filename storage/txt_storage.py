@@ -1,5 +1,4 @@
-"""Article storage handler for saving fetched articles to disk."""
-import os
+"""Article storage handler for saving fetched articles to text files."""
 import re
 from pathlib import Path
 from typing import Optional

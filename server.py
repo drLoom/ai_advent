@@ -1,7 +1,7 @@
 import logging
 from flask import Flask, request, jsonify, render_template
 from conversation import Conversation
-from mcp_client import MCPClient
+from servers.client import MCPClient
 from params import (
     ChatRequestParams,
     MCPToolRequestParams,
@@ -26,14 +26,17 @@ RESEARCH_MODEL = 'google/gemini-2.5-flash-lite-preview-09-2025'
 
 app = Flask(__name__)
 
-# Initialize MCP client (default: filesystem, change to mcp_server_news.py for news)
-mcp_client = MCPClient("mcp_server_news.py")
+# Initialize MCP client
+# (default: filesystem, change to servers/server_news.py for news)
+mcp_client = MCPClient("servers/server_news.py")
 
 
 @app.route('/')
 def index():
     """Render the chat UI."""
-    return render_template('chat.html', model=MODEL, research_model=RESEARCH_MODEL)
+    return render_template(
+        'chat.html', model=MODEL, research_model=RESEARCH_MODEL
+    )
 
 
 @app.route('/health', methods=['GET'])
@@ -108,7 +111,8 @@ def summarize_article():
 
         # Process summarization request
         response = conversation.process_message(
-            user_message=f"""Please provide a well-structured, concise summary of this article.
+            user_message=f"""Please provide a well-structured, \
+concise summary of this article.
 
 Format your response as:
 1. Main Points (3-5 bullet points)

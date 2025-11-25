@@ -12,3 +12,4 @@ wheels/
 .clauderc
 .vscode/
 tmp/
+db/articles.sqlite

@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 """MCP server for news parsing and article extraction."""
 import asyncio
-import json
-from datetime import datetime
-from typing import Optional
 from urllib.parse import urljoin
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from mcp.server.stdio import stdio_server
-import feedparser
 import httpx
 from bs4 import BeautifulSoup
 from lxml import html
@@ -19,31 +15,6 @@ app = Server("news-parser")
 
 # Initialize article storage
 article_storage = StoreToTxt()
-
-
-def parse_rss_feed(url: str, max_articles: int = 10) -> dict:
-    """Parse RSS/Atom feed and extract articles."""
-    try:
-        feed = feedparser.parse(url)
-
-        articles = []
-        for entry in feed.entries[:max_articles]:
-            article = {
-                "title": entry.get("title", "No title"),
-                "link": entry.get("link", ""),
-                "published": entry.get("published", ""),
-                "summary": entry.get("summary", ""),
-                "author": entry.get("author", "Unknown")
-            }
-            articles.append(article)
-
-        return {
-            "feed_title": feed.feed.get("title", "Unknown"),
-            "total_articles": len(articles),
-            "articles": articles
-        }
-    except Exception as e:
-        return {"error": str(e)}
 
 
 def fetch_article_content(url: str) -> dict:

@@ -15,4 +15,5 @@ dependencies = [
     "beautifulsoup4>=4.14.2",
     "httpx>=0.28.1",
     "lxml>=6.0.2",
+    "sqlalchemy>=2.0.44",
 ]

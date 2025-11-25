@@ -1,4 +1,6 @@
 """Storage package for article persistence."""
-from .article_storage import StoreToTxt
+from .models import Article, Base
+from .txt_storage import StoreToTxt
+from .db_storage import ArticleStorage
 
-__all__ = ['StoreToTxt']
+__all__ = ['Article', 'Base', 'StoreToTxt', 'ArticleStorage']

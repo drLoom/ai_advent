@@ -18,7 +18,7 @@ class MCPClient:
         Args:
             server_script: Path to MCP server script
         """
-        self.server_script = server_script or "mcp_server_filesystem.py"
+        self.server_script = server_script or "servers/server_filesystem.py"
         self.connected = False
         self.tools = []
         self.session: Optional[ClientSession] = None
@@ -59,7 +59,6 @@ class MCPClient:
             args=["run", "python3", self.server_script],
         )
 
-        # Store server params for later use
         self.server_params = server_params
 
     def get_tools(self) -> List[Dict]:

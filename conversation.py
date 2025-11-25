@@ -8,7 +8,7 @@ from ai.history_compressor import HistoryCompressor
 logger = logging.getLogger(__name__)
 
 
-SYSTEM_PROMPT = """
+RESEARCH_SYSTEM_PROMPT = """
 You collect requirements for a project specification.
 
 You must ALWAYS respond in **one** of the Pydantic formats below:
@@ -30,6 +30,21 @@ RULES:
 - Switch to status="final" ONLY when you are certain all required info is complete.
 - Never output anything outside JSON.
 - Never mix fields from both models.
+"""
+
+TOOL_SYSTEM_PROMPT = """
+You are a helpful AI assistant with access to tools for fetching and analyzing news articles.
+
+Available tools:
+- fetch_article: Fetches full content of a single article from a URL
+- fetch_multiple_articles: Fetches a list of article links from a news category or listing page
+
+When users ask you to:
+- Summarize articles from a website → Use fetch_multiple_articles to get article links, then fetch_article for each one
+- Get latest news from a site → Use fetch_multiple_articles on the site's category page
+- Fetch/read/analyze an article → Use fetch_article with the URL
+
+Always use tools when you need current information from websites. Don't make up or guess article content.
 """
 
 
@@ -127,11 +142,14 @@ class Conversation:
         # Build messages list
         messages = conversation_history.copy()
 
-        # Add system prompt if in research mode
-        if research:
-            # If history is empty or doesn't have system prompt, add it at the beginning
-            if not messages or messages[0].get("role") != "system":
-                messages.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
+        # Add system prompt based on mode
+        if not messages or messages[0].get("role") != "system":
+            if research:
+                # Research mode: structured output for requirements gathering
+                messages.insert(0, {"role": "system", "content": RESEARCH_SYSTEM_PROMPT})
+            elif self.mcp_client and self.mcp_client.connected:
+                # Tool mode: guide the AI to use available tools
+                messages.insert(0, {"role": "system", "content": TOOL_SYSTEM_PROMPT})
 
         messages.append({
             "role": "user",
