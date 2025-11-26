@@ -66,10 +66,11 @@ class ChatParameters {
     /**
      * Build request body for chat endpoint
      * @param {Array} conversationHistory - Previous conversation messages
+     * @param {number} conversationId - Current conversation ID
      * @returns {Object} Request body for /chat endpoint
      */
-    toRequestBody(conversationHistory = []) {
-        return {
+    toRequestBody(conversationHistory = [], conversationId = null) {
+        const body = {
             message: this.getMessage(),
             temperature: this.getTemperature(),
             conversation_history: conversationHistory,
@@ -77,5 +78,11 @@ class ChatParameters {
             research: this.isResearchMode(),
             enable_compression: this.isCompressionEnabled()
         };
+
+        if (conversationId) {
+            body.conversation_id = conversationId;
+        }
+
+        return body;
     }
 }

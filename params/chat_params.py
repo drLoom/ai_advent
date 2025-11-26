@@ -1,5 +1,5 @@
 """Chat request parameters."""
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from .exceptions import ValidationError
 
@@ -13,6 +13,7 @@ class ChatRequestParams:
     short: bool
     research: bool
     enable_compression: bool
+    conversation_id: Optional[int]
 
     @classmethod
     def from_request(cls, data: Dict[str, Any]) -> 'ChatRequestParams':
@@ -41,7 +42,8 @@ class ChatRequestParams:
             conversation_history=data.get('conversation_history', []),
             short=data.get('short', False),
             research=data.get('research', False),
-            enable_compression=data.get('enable_compression', True)
+            enable_compression=data.get('enable_compression', True),
+            conversation_id=data.get('conversation_id')
         )
 
     @staticmethod

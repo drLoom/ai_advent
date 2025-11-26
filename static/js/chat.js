@@ -21,7 +21,7 @@ function updateTemp(value) {
     document.getElementById('tempValue').textContent = value;
 }
 
-function addMessage(role, content, responseTime = null, usage = null) {
+function addMessage(role, content, responseTime = null, usage = null, timestamp = null) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
@@ -34,6 +34,24 @@ function addMessage(role, content, responseTime = null, usage = null) {
     contentDiv.innerHTML = formattedContent;
 
     messageDiv.appendChild(contentDiv);
+
+    // Add timestamp if provided
+    if (timestamp) {
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'message-timestamp';
+
+        if (typeof formatMessageTime === 'function') {
+            timestampDiv.textContent = formatMessageTime(timestamp);
+        } else {
+            const date = new Date(timestamp);
+            timestampDiv.textContent = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        messageDiv.appendChild(timestampDiv);
+    }
 
     // Add metadata (response time and token usage) if provided
     if (role === 'assistant' && (responseTime !== null || usage !== null)) {
@@ -143,12 +161,24 @@ async function sendMessage() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(params.toRequestBody(conversationHistory))
+            body: JSON.stringify(params.toRequestBody(
+                conversationHistory,
+                typeof currentConversationId !== 'undefined' ? currentConversationId : null
+            ))
         });
 
         const data = await response.json();
 
         console.log('Full response data:', data);
+
+        // Update conversation ID from response
+        if (data.conversation_id && typeof currentConversationId !== 'undefined') {
+            currentConversationId = data.conversation_id;
+            // Reload conversations list to show updated conversation
+            if (typeof loadConversations === 'function') {
+                loadConversations();
+            }
+        }
 
         // Calculate response time
         const endTime = performance.now();
@@ -201,15 +231,19 @@ async function sendMessage() {
 
 function clearChat() {
     if (confirm('Are you sure you want to clear the chat?')) {
-        conversationHistory = [];
-        const chatMessages = document.getElementById('chatMessages');
-        chatMessages.innerHTML = `
-            <div class="message assistant">
-                <div class="message-content">
-                    <strong>AI:</strong> Hello! I'm your AI assistant. How can I help you today?
+        if (typeof newConversation === 'function') {
+            newConversation();
+        } else {
+            conversationHistory = [];
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = `
+                <div class="message assistant">
+                    <div class="message-content">
+                        Hello! I'm your AI assistant. How can I help you today?
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
 }
 

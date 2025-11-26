@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from .models import Base, Article, Review
+from .models import Base, Article, Review, Conversation, Message
 
 
 class ArticleStorage:
@@ -346,5 +346,178 @@ class ArticleStorage:
             article_dict['reviews'] = [review.to_dict() for review in reviews]
 
             return article_dict
+        finally:
+            session.close()
+
+    def create_conversation(self) -> int:
+        """
+        Create a new conversation.
+
+        Returns:
+            ID of the created conversation
+        """
+        session = self._get_session()
+        try:
+            conversation = Conversation(
+                created_at=datetime.now(),
+                updated_at=datetime.now()
+            )
+            session.add(conversation)
+            session.commit()
+            session.refresh(conversation)
+            return conversation.id
+        finally:
+            session.close()
+
+    def save_message(
+        self,
+        conversation_id: int,
+        role: str,
+        content: str,
+        model_name: Optional[str] = None,
+        prompt_tokens: Optional[int] = None,
+        completion_tokens: Optional[int] = None,
+        total_tokens: Optional[int] = None,
+        temperature: Optional[float] = None
+    ) -> Optional[int]:
+        """
+        Save a message to a conversation.
+
+        Args:
+            conversation_id: Conversation ID
+            role: Message role (user/assistant)
+            content: Message content
+            model_name: Name of the LLM model (optional)
+            prompt_tokens: Number of prompt tokens (optional)
+            completion_tokens: Number of completion tokens (optional)
+            total_tokens: Total number of tokens (optional)
+            temperature: Temperature setting (optional)
+
+        Returns:
+            Message ID if saved, None if conversation doesn't exist
+        """
+        session = self._get_session()
+        try:
+            conversation = session.query(Conversation).filter(
+                Conversation.id == conversation_id
+            ).first()
+            if not conversation:
+                return None
+
+            message = Message(
+                conversation_id=conversation_id,
+                role=role,
+                content=content,
+                model_name=model_name,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                temperature=temperature,
+                created_at=datetime.now()
+            )
+            session.add(message)
+
+            conversation.updated_at = datetime.now()
+
+            session.commit()
+            session.refresh(message)
+            return message.id
+        finally:
+            session.close()
+
+    def get_conversation(self, conversation_id: int) -> Optional[dict]:
+        """
+        Get conversation by ID.
+
+        Args:
+            conversation_id: Conversation ID
+
+        Returns:
+            Conversation dictionary or None if not found
+        """
+        session = self._get_session()
+        try:
+            conversation = session.query(Conversation).filter(
+                Conversation.id == conversation_id
+            ).first()
+            return conversation.to_dict() if conversation else None
+        finally:
+            session.close()
+
+    def get_conversation_with_messages(
+        self,
+        conversation_id: int
+    ) -> Optional[dict]:
+        """
+        Get conversation with all its messages.
+
+        Args:
+            conversation_id: Conversation ID
+
+        Returns:
+            Dictionary with conversation and messages, or None
+        """
+        session = self._get_session()
+        try:
+            conversation = session.query(Conversation).filter(
+                Conversation.id == conversation_id
+            ).first()
+            if not conversation:
+                return None
+
+            conversation_dict = conversation.to_dict()
+            messages = session.query(Message).filter(
+                Message.conversation_id == conversation_id
+            ).order_by(Message.created_at.asc()).all()
+            conversation_dict['messages'] = [
+                message.to_dict() for message in messages
+            ]
+
+            return conversation_dict
+        finally:
+            session.close()
+
+    def list_conversations(self, limit: Optional[int] = None) -> List[dict]:
+        """
+        List all conversations.
+
+        Args:
+            limit: Maximum number to return (optional)
+
+        Returns:
+            List of conversation dictionaries
+        """
+        session = self._get_session()
+        try:
+            query = session.query(Conversation).order_by(
+                Conversation.updated_at.desc()
+            )
+            if limit:
+                query = query.limit(limit)
+            conversations = query.all()
+            return [conv.to_dict() for conv in conversations]
+        finally:
+            session.close()
+
+    def delete_conversation(self, conversation_id: int) -> bool:
+        """
+        Delete a conversation by ID.
+
+        Args:
+            conversation_id: Conversation ID
+
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        session = self._get_session()
+        try:
+            conversation = session.query(Conversation).filter(
+                Conversation.id == conversation_id
+            ).first()
+            if conversation:
+                session.delete(conversation)
+                session.commit()
+                return True
+            return False
         finally:
             session.close()

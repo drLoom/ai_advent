@@ -2,6 +2,7 @@ import logging
 from flask import Flask, request, jsonify, render_template
 from conversation import Conversation
 from servers.client_manager import MCPClientManager
+from storage import ArticleStorage
 from params import (
     ChatRequestParams,
     MCPToolRequestParams,
@@ -33,6 +34,9 @@ mcp_client = MCPClientManager([
     "servers/server_reviews.py",
     "servers/server_filesystem.py"
 ])
+
+# Initialize storage for conversation logging
+storage = ArticleStorage()
 
 
 @app.route('/')
@@ -153,6 +157,48 @@ Article content:
         }), 500
 
 
+@app.route('/conversations', methods=['GET'])
+def get_conversations():
+    """Get list of all conversations."""
+    try:
+        limit = request.args.get('limit', type=int)
+        conversations = storage.list_conversations(limit=limit)
+        return jsonify({
+            "success": True,
+            "conversations": conversations
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route('/conversations/<int:conversation_id>', methods=['GET'])
+def get_conversation(conversation_id: int):
+    """Get a specific conversation with all messages."""
+    try:
+        conversation = storage.get_conversation_with_messages(conversation_id)
+
+        if not conversation:
+            return jsonify({
+                "success": False,
+                "error": f"Conversation {conversation_id} not found"
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "conversation": conversation
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
@@ -166,6 +212,19 @@ def chat():
         # Connect to MCP server if not already connected
         if not mcp_client.connected:
             mcp_client.connect()
+
+        # Create or retrieve conversation for logging
+        if params.conversation_id:
+            conversation_id = params.conversation_id
+        else:
+            conversation_id = storage.create_conversation()
+
+        # Log user message
+        storage.save_message(
+            conversation_id=conversation_id,
+            role="user",
+            content=params.message
+        )
 
         # Create conversation with validated parameters and MCP client
         conversation = Conversation(
@@ -182,6 +241,22 @@ def chat():
             short=params.short,
             research=params.research
         )
+
+        # Log assistant response if successful
+        if not response.get('error'):
+            storage.save_message(
+                conversation_id=conversation_id,
+                role="assistant",
+                content=response.get('message', ''),
+                model_name=selected_model,
+                prompt_tokens=response.get('prompt_tokens'),
+                completion_tokens=response.get('completion_tokens'),
+                total_tokens=response.get('total_tokens'),
+                temperature=params.temperature
+            )
+
+        # Add conversation_id to response
+        response['conversation_id'] = conversation_id
 
         return jsonify(response), 200
 
