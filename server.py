@@ -1,5 +1,10 @@
 import logging
+import os
+import base64
+import requests
+import tempfile
 from flask import Flask, request, jsonify, render_template
+from pydub import AudioSegment
 from conversation import Conversation
 from servers.client_manager import MCPClientManager
 from storage import ArticleStorage
@@ -37,6 +42,10 @@ mcp_client = MCPClientManager([
 
 # Initialize storage for conversation logging
 storage = ArticleStorage()
+
+# OpenRouter API configuration
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 @app.route('/')
@@ -269,6 +278,122 @@ def chat():
         return jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe_audio():
+    """Transcribe audio using OpenRouter multimodal API."""
+    temp_webm_path = None
+    temp_wav_path = None
+
+    try:
+        # Check if audio file is present
+        if 'audio' not in request.files:
+            return jsonify({
+                "success": False,
+                "error": "No audio file provided"
+            }), 400
+
+        audio_file = request.files['audio']
+
+        if audio_file.filename == '':
+            return jsonify({
+                "success": False,
+                "error": "Empty filename"
+            }), 400
+
+        # Save uploaded WebM file to temporary location
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as temp_webm:
+            audio_file.save(temp_webm.name)
+            temp_webm_path = temp_webm.name
+
+        # Convert WebM to WAV using pydub
+        audio = AudioSegment.from_file(temp_webm_path, format="webm")
+
+        # Create temporary WAV file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_wav:
+            temp_wav_path = temp_wav.name
+
+        # Export as WAV
+        audio.export(temp_wav_path, format="wav")
+
+        # Read WAV file and encode to base64
+        with open(temp_wav_path, 'rb') as wav_file:
+            audio_data = wav_file.read()
+            base64_audio = base64.b64encode(audio_data).decode('utf-8')
+
+        # Prepare OpenRouter API request
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "google/gemini-2.5-flash",  # Free model with audio support
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Please transcribe this audio file. Only return the transcribed text, nothing else."
+                        },
+                        {
+                            "type": "input_audio",
+                            "input_audio": {
+                                "data": base64_audio,
+                                "format": "wav"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+
+        # Call OpenRouter API
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+
+        result = response.json()
+
+        transcript = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+
+
+        logging.info(f"Transcription result: {transcript}  ")
+
+
+
+        # conversation = Conversation(
+        #     model=MODEL,
+        #     temperature=0.7,
+        #     enable_compression=False
+        # )
+
+
+        # # Process message
+        # response = conversation.process_message(
+        #     user_message=transcript,
+        # )
+
+
+        return jsonify({
+            "success": True,
+            "text": transcript
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Transcription error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+    finally:
+        # Clean up temporary files
+        if temp_webm_path and os.path.exists(temp_webm_path):
+            os.unlink(temp_webm_path)
+        if temp_wav_path and os.path.exists(temp_wav_path):
+            os.unlink(temp_wav_path)
+
 
 
 @app.errorhandler(404)
