@@ -31,15 +31,121 @@
 
 ## Usage
 
-### Option 1: Interactive CLI (main.py)
+### Document Indexing CLI
 
-Run the AI agent:
+The CLI provides powerful document indexing and semantic search capabilities using embeddings.
+
+#### View All Commands
 
 ```bash
-uv run main.py parse_review --review "Love the new update! Dark mode looks great. But please fix the crash on iOS 18. 5 stars."
+uv run python main.py --help
+uv run python main.py index --help
 ```
 
-### Option 2: HTTP Server (server.py)
+#### Available Commands
+
+**Add Documents to Index**
+```bash
+# Index a PDF document
+uv run python main.py index add "document.pdf"
+
+# Index a markdown file
+uv run python main.py index add README.md
+
+# Index a Python file
+uv run python main.py index add script.py
+```
+
+**Index a Directory**
+```bash
+# Index all supported files in current directory (recursive)
+uv run python main.py index add . --recursive
+
+# Index only specific file types
+uv run python main.py index add ./docs --file-types pdf,md,txt
+
+# Non-recursive indexing
+uv run python main.py index add ./folder --no-recursive
+
+# Custom chunk size
+uv run python main.py index add ./data --chunk-size 1000 --chunk-overlap 100
+```
+
+**Search Indexed Documents**
+```bash
+# Basic search
+uv run python main.py index search "How do I install dependencies?"
+
+# Search with more results
+uv run python main.py index search "What is the revenue?" --top-k 10
+```
+
+**Ask Questions (RAG - Retrieval-Augmented Generation)**
+```bash
+# Ask a question and get an AI-generated answer based on your documents
+uv run python main.py index ask "What was NVIDIA's fourth quarter revenue?"
+
+# Use more context chunks for better answers
+uv run python main.py index ask "Explain the key findings" --top-k 10
+
+# Use a different model
+uv run python main.py index ask "What was NVIDIA's fourth quarter revenue" --model "openai/gpt-4"
+
+# Hide source citations
+uv run python main.py index ask "What are the highlights?" --no-sources
+```
+
+**List Indexed Documents**
+```bash
+# List all documents
+uv run python main.py index list-docs
+
+# Limit results
+uv run python main.py index list-docs --limit 20
+```
+
+**View Statistics**
+```bash
+uv run python main.py index stats
+```
+
+**Delete Documents**
+```bash
+# Delete specific document by ID
+uv run python main.py index delete <doc_id>
+```
+
+**Reindex Documents**
+```bash
+# Reindex specific document
+uv run python main.py index reindex --doc-id <doc_id>
+
+# Reindex all documents
+uv run python main.py index reindex --all
+```
+
+#### Supported File Types
+
+- **PDF**: `.pdf`
+- **Markdown**: `.md`, `.markdown`
+- **Code**: `.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.java`, `.cpp`, `.c`, `.go`, `.rs`, `.rb`, `.php`, `.swift`, `.kt`, `.scala`
+- **Text**: `.txt`, `.log`, `.csv`, `.json`, `.xml`, `.html`
+
+#### How It Works
+
+1. **Document Loading**: Extracts text from various file formats
+   - PDF files use PyMuPDF for better text extraction with layout preservation
+   - Page numbers are tracked and preserved for PDF documents
+2. **Chunking**: Splits text into manageable chunks (default 500 tokens with 50 token overlap)
+   - Maintains page number associations for PDF chunks
+3. **Embedding Generation**: Creates vector embeddings using OpenAI's text-embedding-3-small model
+4. **Vector Storage**: Stores embeddings in FAISS index for fast similarity search
+5. **Semantic Search**: Retrieves relevant chunks based on query similarity
+   - Search results include page numbers for PDF documents
+6. **RAG (Retrieval-Augmented Generation)**: Combines search results with LLM to answer questions based on your documents
+   - Source citations include page numbers when available
+
+### HTTP Server (server.py)
 
 Run the HTTP server that accepts POST requests and forwards them to OpenRouter:
 

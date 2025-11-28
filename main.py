@@ -1,40 +1,20 @@
 #!/usr/bin/env python3
 """
-Simple CLI tool to send messages to OpenRouter API.
-Usage: python main.py --message "Your message here"
+CLI tool for AI-powered document processing and indexing.
 """
 
-import argparse
+import typer
+from cli.index_commands import app as index_app
 
-from cli.parse_review import parse_review
+app = typer.Typer(
+    help="AI-powered document processing and indexing CLI", no_args_is_help=True
+)
+
+app.add_typer(index_app, name="index", help="Document indexing commands")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Send a message to OpenRouter API",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    review_parser = subparsers.add_parser("parse_review", help="Parse review message")
-
-    review_parser.add_argument("--review", type=str, help="Review text")
-    review_parser.set_defaults(func=parse_review)
-
-    args = parser.parse_args()
-    args.func(args)
-
-
-def format_response(response_data):
-    ai_message = response_data["choices"][0]["message"]["content"]
-    print("\n" + "=" * 50)
-    print("🤖 AI Response:")
-    print("=" * 50)
-    print(ai_message)
-    print("=" * 50 + "\n")
-
-    usage = response_data.get("usage", {})
-    if usage:
-        print(f"📊 Usage: {usage.get('total_tokens', 'N/A')} tokens")
+    app()
 
 
 if __name__ == "__main__":

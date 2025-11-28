@@ -121,3 +121,61 @@ class Message(Base):
             'temperature': self.temperature,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+
+class Document(Base):
+    """SQLAlchemy model for storing indexed documents."""
+
+    __tablename__ = 'documents'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    file_path = Column(String(1000), nullable=False, unique=True)
+    file_type = Column(String(50), nullable=False)
+    title = Column(String(500), nullable=True)
+    content = Column(Text, nullable=False)
+    meta_data = Column(Text, nullable=True)
+    indexed_at = Column(DateTime, default=datetime.now)
+
+    chunks = relationship("Chunk", back_populates="document", cascade="all, delete-orphan")
+
+    def to_dict(self) -> dict:
+        """Convert document to dictionary."""
+        return {
+            'id': self.id,
+            'file_path': self.file_path,
+            'file_type': self.file_type,
+            'title': self.title,
+            'content': self.content,
+            'metadata': json.loads(self.meta_data) if self.meta_data else None,
+            'indexed_at': self.indexed_at.isoformat() if self.indexed_at else None
+        }
+
+
+class Chunk(Base):
+    """SQLAlchemy model for storing text chunks with embeddings."""
+
+    __tablename__ = 'chunks'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    document_id = Column(Integer, ForeignKey('documents.id'), nullable=False)
+    chunk_index = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    token_count = Column(Integer, nullable=False)
+    embedding_model = Column(String(100), nullable=False)
+    page_number = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.now)
+
+    document = relationship("Document", back_populates="chunks")
+
+    def to_dict(self) -> dict:
+        """Convert chunk to dictionary."""
+        return {
+            'id': self.id,
+            'document_id': self.document_id,
+            'chunk_index': self.chunk_index,
+            'content': self.content,
+            'token_count': self.token_count,
+            'embedding_model': self.embedding_model,
+            'page_number': self.page_number,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
