@@ -163,6 +163,7 @@ class Chunk(Base):
     token_count = Column(Integer, nullable=False)
     embedding_model = Column(String(100), nullable=False)
     page_number = Column(Integer, nullable=True)
+    section_title = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 
     document = relationship("Document", back_populates="chunks")
@@ -177,5 +178,6 @@ class Chunk(Base):
             'token_count': self.token_count,
             'embedding_model': self.embedding_model,
             'page_number': self.page_number,
+            'section_title': self.section_title,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

@@ -136,14 +136,21 @@ uv run python main.py index reindex --all
 1. **Document Loading**: Extracts text from various file formats
    - PDF files use PyMuPDF for better text extraction with layout preservation
    - Page numbers are tracked and preserved for PDF documents
-2. **Chunking**: Splits text into manageable chunks (default 500 tokens with 50 token overlap)
-   - Maintains page number associations for PDF chunks
+2. **Smart Chunking**: Intelligently splits text based on document structure
+   - **Markdown files (.md)**: Heading-aware chunking that preserves document hierarchy
+     - Keeps sections together when possible
+     - Creates hierarchical section paths (e.g., "Installation > Dependencies")
+     - Better semantic coherence for documentation and structured content
+   - **PDF files (.pdf)**: Token-based chunking with page number tracking
+   - **Other files**: Token-based chunking (default 500 tokens with 50 token overlap)
 3. **Embedding Generation**: Creates vector embeddings using OpenAI's text-embedding-3-small model
 4. **Vector Storage**: Stores embeddings in FAISS index for fast similarity search
 5. **Semantic Search**: Retrieves relevant chunks based on query similarity
+   - Search results show section titles for markdown documents
    - Search results include page numbers for PDF documents
 6. **RAG (Retrieval-Augmented Generation)**: Combines search results with LLM to answer questions based on your documents
-   - Source citations include page numbers when available
+   - Source citations show section paths for markdown files (e.g., "Configuration > API Keys")
+   - Source citations include page numbers for PDFs (e.g., "Page 5")
 
 ### HTTP Server (server.py)
 

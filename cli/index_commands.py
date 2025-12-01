@@ -156,7 +156,12 @@ def search(
             console.print(f"   Score: {score:.4f}")
             console.print(f"   File: {metadata.get('file_path')}")
 
-            # Show page number if available
+            # Show section title if available (markdown)
+            section_title = metadata.get('section_title')
+            if section_title:
+                console.print(f"   Section: {section_title}")
+
+            # Show page number if available (PDF)
             page_num = metadata.get('page_number')
             if page_num:
                 console.print(f"   Page: {page_num}")
@@ -224,6 +229,7 @@ def ask(
             title = metadata.get('title', 'Unknown')
             file_path = metadata.get('file_path', 'Unknown')
             page_num = metadata.get('page_number')
+            section_title = metadata.get('section_title')
 
             context_parts.append(
                 f"[Document {i}: {title}]\n{content}\n"
@@ -233,7 +239,8 @@ def ask(
                 'title': title,
                 'file': file_path,
                 'score': score,
-                'page': page_num
+                'page': page_num,
+                'section': section_title
             })
 
         context = "\n".join(context_parts)
@@ -289,12 +296,21 @@ Please provide a clear and concise answer based on the context above."""
         if show_sources:
             console.print("\n[bold cyan]Sources:[/bold cyan]\n")
             for i, source in enumerate(sources, 1):
-                page_info = (
-                    f", Page {source['page']}" if source['page'] else ""
+                # Build location info (section or page)
+                location_parts = []
+                if source.get('section'):
+                    location_parts.append(f"Section: {source['section']}")
+                if source.get('page'):
+                    location_parts.append(f"Page {source['page']}")
+
+                location_info = (
+                    f" ({', '.join(location_parts)})"
+                    if location_parts else ""
                 )
+
                 similarity = source['score']
                 console.print(
-                    f"{i}. {source['title']}{page_info} "
+                    f"{i}. {source['title']}{location_info} "
                     f"(similarity: {similarity:.2f})"
                 )
                 console.print(f"   File: {source['file']}")

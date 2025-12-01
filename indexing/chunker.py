@@ -1,6 +1,7 @@
 """Text chunking utilities for document indexing."""
+import re
 import tiktoken
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 
 
 class TextChunk:
@@ -13,7 +14,8 @@ class TextChunk:
         token_count: int,
         start_char: int,
         end_char: int,
-        page_number: int = None
+        page_number: int = None,
+        section_title: str = None
     ):
         self.content = content
         self.chunk_index = chunk_index
@@ -21,6 +23,7 @@ class TextChunk:
         self.start_char = start_char
         self.end_char = end_char
         self.page_number = page_number
+        self.section_title = section_title
 
 
 class TextChunker:
@@ -254,6 +257,244 @@ class TextChunker:
                     token_count=current_tokens,
                     start_char=char_position,
                     end_char=char_position + len(chunk_text)
+                )
+            )
+
+        return chunks
+
+    def chunk_markdown_by_headings(
+        self,
+        text: str
+    ) -> List[TextChunk]:
+        """
+        Split markdown text by headings, respecting token limits.
+
+        Args:
+            text: Markdown text to split
+
+        Returns:
+            List of TextChunk objects with section titles
+        """
+        if not text or not text.strip():
+            return []
+
+        # Parse markdown structure
+        sections = self._parse_markdown_sections(text)
+
+        if not sections:
+            # No headings found, fall back to regular chunking
+            return self.chunk_text(text)
+
+        chunks = []
+        chunk_index = 0
+
+        for section in sections:
+            section_title = section['title']
+            section_content = section['content']
+            section_start = section['start_char']
+
+            # Count tokens in section
+            section_tokens = self.count_tokens(section_content)
+
+            # If section fits in one chunk, keep it together
+            if section_tokens <= self.chunk_size:
+                chunks.append(
+                    TextChunk(
+                        content=section_content,
+                        chunk_index=chunk_index,
+                        token_count=section_tokens,
+                        start_char=section_start,
+                        end_char=section_start + len(section_content),
+                        section_title=section_title
+                    )
+                )
+                chunk_index += 1
+            else:
+                # Section is too large, split by paragraphs within section
+                section_chunks = self._chunk_large_section(
+                    section_content,
+                    section_title,
+                    section_start,
+                    chunk_index
+                )
+                chunks.extend(section_chunks)
+                chunk_index += len(section_chunks)
+
+        return chunks
+
+    def _parse_markdown_sections(
+        self,
+        text: str
+    ) -> List[Dict]:
+        """
+        Parse markdown text into sections based on headings.
+
+        Returns list of dicts with:
+        - title: heading hierarchy (e.g., "Installation > Dependencies")
+        - content: section content including heading
+        - start_char: character position
+        - level: heading level (1-6)
+        """
+        lines = text.split('\n')
+        sections = []
+        current_section = None
+        heading_stack = []
+        char_position = 0
+
+        # Regex for markdown headings
+        heading_pattern = re.compile(r'^(#{1,6})\s+(.+)$')
+
+        for line_num, line in enumerate(lines):
+            line_start = char_position
+            match = heading_pattern.match(line)
+
+            if match:
+                # Save previous section if exists
+                if current_section:
+                    current_section['content'] = '\n'.join(
+                        current_section['lines']
+                    )
+                    sections.append(current_section)
+
+                # Parse new heading
+                hashes = match.group(1)
+                heading_text = match.group(2).strip()
+                level = len(hashes)
+
+                # Update heading stack for hierarchy
+                heading_stack = heading_stack[:level-1]
+                heading_stack.append(heading_text)
+
+                # Create hierarchical title
+                section_title = ' > '.join(heading_stack)
+
+                # Start new section
+                current_section = {
+                    'title': section_title,
+                    'lines': [line],
+                    'start_char': line_start,
+                    'level': level
+                }
+            else:
+                # Add line to current section
+                if current_section:
+                    current_section['lines'].append(line)
+                elif sections:
+                    # Content before first heading, add to last section
+                    sections[-1]['lines'].append(line)
+                else:
+                    # Content before any heading, create intro section
+                    if not current_section:
+                        current_section = {
+                            'title': 'Introduction',
+                            'lines': [line],
+                            'start_char': 0,
+                            'level': 0
+                        }
+
+            char_position += len(line) + 1  # +1 for newline
+
+        # Add final section
+        if current_section:
+            current_section['content'] = '\n'.join(
+                current_section['lines']
+            )
+            sections.append(current_section)
+
+        return sections
+
+    def _chunk_large_section(
+        self,
+        section_content: str,
+        section_title: str,
+        section_start: int,
+        start_index: int
+    ) -> List[TextChunk]:
+        """
+        Split a large section that exceeds chunk_size.
+
+        Tries to split by paragraphs first, then by tokens.
+        """
+        chunks = []
+        paragraphs = section_content.split('\n\n')
+
+        current_chunk_lines = []
+        current_tokens = 0
+        chunk_start = section_start
+        chunk_index = start_index
+
+        for para in paragraphs:
+            para = para.strip()
+            if not para:
+                continue
+
+            para_tokens = self.count_tokens(para)
+
+            # If single paragraph exceeds limit, split it by tokens
+            if para_tokens > self.chunk_size:
+                # Save accumulated content first
+                if current_chunk_lines:
+                    chunk_text = '\n\n'.join(current_chunk_lines)
+                    chunks.append(
+                        TextChunk(
+                            content=chunk_text,
+                            chunk_index=chunk_index,
+                            token_count=current_tokens,
+                            start_char=chunk_start,
+                            end_char=chunk_start + len(chunk_text),
+                            section_title=section_title
+                        )
+                    )
+                    chunk_index += 1
+                    chunk_start += len(chunk_text) + 2
+                    current_chunk_lines = []
+                    current_tokens = 0
+
+                # Split large paragraph by tokens
+                para_chunks = self.chunk_text(para)
+                for pc in para_chunks:
+                    pc.chunk_index = chunk_index
+                    pc.section_title = section_title
+                    chunks.append(pc)
+                    chunk_index += 1
+
+            # If adding paragraph would exceed limit, finalize chunk
+            elif current_tokens + para_tokens > self.chunk_size:
+                if current_chunk_lines:
+                    chunk_text = '\n\n'.join(current_chunk_lines)
+                    chunks.append(
+                        TextChunk(
+                            content=chunk_text,
+                            chunk_index=chunk_index,
+                            token_count=current_tokens,
+                            start_char=chunk_start,
+                            end_char=chunk_start + len(chunk_text),
+                            section_title=section_title
+                        )
+                    )
+                    chunk_index += 1
+                    chunk_start += len(chunk_text) + 2
+
+                # Start new chunk with this paragraph
+                current_chunk_lines = [para]
+                current_tokens = para_tokens
+
+            # Add paragraph to current chunk
+            else:
+                current_chunk_lines.append(para)
+                current_tokens += para_tokens
+
+        # Add remaining content
+        if current_chunk_lines:
+            chunk_text = '\n\n'.join(current_chunk_lines)
+            chunks.append(
+                TextChunk(
+                    content=chunk_text,
+                    chunk_index=chunk_index,
+                    token_count=current_tokens,
+                    start_char=chunk_start,
+                    end_char=chunk_start + len(chunk_text),
+                    section_title=section_title
                 )
             )
 

@@ -93,9 +93,14 @@ class IndexManager:
             loader = DocumentLoaderFactory.get_loader(file_path)
             loaded_doc = loader.load(file_path)
 
-            # Chunk text with page tracking
+            # Chunk text based on file type
             if use_paragraph_chunking:
                 chunks = self.chunker.chunk_text_by_paragraphs(
+                    loaded_doc.content
+                )
+            elif loaded_doc.file_type in ['md', 'markdown']:
+                # Use heading-aware chunking for markdown
+                chunks = self.chunker.chunk_markdown_by_headings(
                     loaded_doc.content
                 )
             else:
@@ -135,6 +140,7 @@ class IndexManager:
                     token_count=chunk.token_count,
                     embedding_model=self.embedder.model,
                     page_number=chunk.page_number,
+                    section_title=chunk.section_title,
                     created_at=datetime.now()
                 )
                 session.add(chunk_record)
@@ -148,7 +154,8 @@ class IndexManager:
                     'title': doc.title,
                     'chunk_index': chunk.chunk_index,
                     'content': chunk.content[:200],
-                    'page_number': chunk.page_number
+                    'page_number': chunk.page_number,
+                    'section_title': chunk.section_title
                 })
 
             # Add to vector store
