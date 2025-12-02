@@ -91,6 +91,12 @@ uv run python main.py index ask "Explain the key findings" --top-k 10
 # Use a different model
 uv run python main.py index ask "What was NVIDIA's fourth quarter revenue" --model "openai/gpt-4"
 
+# Use reranking to improve answer quality (filters irrelevant results)
+uv run python main.py index ask "What are the performance improvements?" --rerank --threshold 0.6
+
+# Customize reranking model (recommended: gpt-4o-mini for better results)
+uv run python main.py index ask "How to install?" --rerank --rerank-model "openai/gpt-4o-mini" --threshold 0.5
+
 # Hide source citations
 uv run python main.py index ask "What are the highlights?" --no-sources
 ```
@@ -124,6 +130,18 @@ uv run python main.py index reindex --doc-id <doc_id>
 uv run python main.py index reindex --all
 ```
 
+**Compare Search Results (with and without Reranking)**
+```bash
+# Compare initial search results vs reranked results side-by-side
+uv run python main.py index ranking "What are the new features?"
+
+# Adjust relevance threshold to filter more aggressively
+uv run python main.py index ranking "How does it work?" --threshold 0.7
+
+# Use different reranking model
+uv run python main.py index ranking "Performance tips" --rerank-model "openai/gpt-4o-mini"
+```
+
 #### Supported File Types
 
 - **PDF**: `.pdf`
@@ -151,6 +169,12 @@ uv run python main.py index reindex --all
 6. **RAG (Retrieval-Augmented Generation)**: Combines search results with LLM to answer questions based on your documents
    - Source citations show section paths for markdown files (e.g., "Configuration > API Keys")
    - Source citations include page numbers for PDFs (e.g., "Page 5")
+   - **Optional Reranking**: Second-stage relevance filtering to improve answer quality
+     - Uses an LLM to score each chunk's relevance to the specific query (0-1 scale)
+     - Filters out irrelevant chunks using a configurable threshold (default: 0.5)
+     - Reorders results by actual relevance, not just vector similarity
+     - Reduces noise and improves answer accuracy
+     - Recommended model: `openai/gpt-4o-mini` (fast and accurate)
 
 ### HTTP Server (server.py)
 

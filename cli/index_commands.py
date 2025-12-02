@@ -7,6 +7,7 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from indexing.index_manager import IndexManager
+from indexing.reranker import Reranker
 from ai.open_ai_client import OpenAIClient
 
 
@@ -195,6 +196,22 @@ def ask(
         True,
         "--show-sources/--no-sources",
         help="Show source documents"
+    ),
+    rerank: bool = typer.Option(
+        False,
+        "--rerank/--no-rerank",
+        help="Use reranking to improve result quality"
+    ),
+    rerank_model: str = typer.Option(
+        "deepseek/deepseek-v3.2-speciale",
+        "--rerank-model",
+        help="Model to use for reranking"
+    ),
+    relevance_threshold: float = typer.Option(
+        0.5,
+        "--threshold",
+        "-t",
+        help="Minimum relevance score (0-1) for reranking"
     )
 ):
     """Ask a question using RAG (Retrieval-Augmented Generation)."""
@@ -210,15 +227,64 @@ def ask(
             console=console
         ) as progress:
             task = progress.add_task("Searching documents...", total=None)
-            results = manager.search(question, top_k=top_k)
+            initial_results = manager.search(
+                question,
+                top_k=top_k * 2 if rerank else top_k
+            )
             progress.update(task, completed=True)
 
-        if not results:
+        if not initial_results:
             console.print(
                 "[yellow]No relevant documents found. "
                 "Please index some documents first.[/yellow]"
             )
             return
+
+        # Step 1.5: Rerank results if requested
+        if rerank:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console
+            ) as progress:
+                task = progress.add_task("Reranking results...", total=None)
+                reranker = Reranker(
+                    model=rerank_model,
+                    threshold=relevance_threshold
+                )
+                reranked = reranker.rerank(
+                    question,
+                    initial_results,
+                    top_k=top_k
+                )
+                progress.update(task, completed=True)
+
+            if not reranked:
+                console.print(
+                    "[yellow]No results passed relevance threshold "
+                    f"({relevance_threshold}). "
+                    "Try lowering --threshold.[/yellow]"
+                )
+                return
+
+            # Convert reranked results back to (metadata, score) format
+            # Store relevance scores for display
+            results = [
+                (metadata, similarity)
+                for metadata, similarity, relevance in reranked
+            ]
+            relevance_scores = [
+                relevance for _, _, relevance in reranked
+            ]
+
+            console.print(
+                f"[dim]Filtered {len(initial_results)} → "
+                f"{len(results)} results "
+                f"(threshold: {relevance_threshold})[/dim]\n"
+            )
+        else:
+            results = initial_results
+            relevance_scores = None
 
         # Step 2: Format context from retrieved chunks
         context_parts = []
@@ -235,13 +301,19 @@ def ask(
                 f"[Document {i}: {title}]\n{content}\n"
             )
 
-            sources.append({
+            source = {
                 'title': title,
                 'file': file_path,
                 'score': score,
                 'page': page_num,
                 'section': section_title
-            })
+            }
+
+            # Add relevance score if reranking was used
+            if relevance_scores:
+                source['relevance'] = relevance_scores[i - 1]
+
+            sources.append(source)
 
         context = "\n".join(context_parts)
 
@@ -308,10 +380,18 @@ Please provide a clear and concise answer based on the context above."""
                     if location_parts else ""
                 )
 
+                # Build score info
                 similarity = source['score']
+                score_info = f"similarity: {similarity:.2f}"
+
+                # Add relevance score if available
+                if source.get('relevance') is not None:
+                    relevance = source['relevance']
+                    score_info += f", relevance: {relevance:.2f}"
+
                 console.print(
                     f"{i}. {source['title']}{location_info} "
-                    f"(similarity: {similarity:.2f})"
+                    f"({score_info})"
                 )
                 console.print(f"   File: {source['file']}")
             console.print()
@@ -430,6 +510,134 @@ def delete(
             )
         else:
             console.print(f"[yellow]Document {doc_id} not found[/yellow]")
+
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def ranking(
+    question: str = typer.Argument(..., help="Question to compare"),
+    top_k: int = typer.Option(
+        5,
+        "--top-k",
+        "-k",
+        help="Number of results to compare"
+    ),
+    rerank_model: str = typer.Option(
+        "deepseek/deepseek-v3.2-speciale",
+        "--rerank-model",
+        help="Model to use for reranking"
+    ),
+    threshold: float = typer.Option(
+        0.5,
+        "--threshold",
+        "-t",
+        help="Minimum relevance score (0-1)"
+    )
+):
+    """Compare search results with and without reranking."""
+    try:
+        manager = get_index_manager()
+
+        console.print(
+            f"[cyan]Comparing results for:[/cyan] {question}\n"
+        )
+
+        # Step 1: Get initial search results
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            task = progress.add_task("Searching...", total=None)
+            initial_results = manager.search(question, top_k=top_k * 2)
+            progress.update(task, completed=True)
+
+        if not initial_results:
+            console.print("[yellow]No results found[/yellow]")
+            return
+
+        # Step 2: Rerank results
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            task = progress.add_task("Reranking...", total=None)
+            reranker = Reranker(model=rerank_model, threshold=threshold)
+            reranked = reranker.rerank(
+                question,
+                initial_results,
+                top_k=top_k
+            )
+            progress.update(task, completed=True)
+
+        # Step 3: Display comparison
+        console.print(
+            f"[bold]Initial Results (top {top_k}):[/bold]\n"
+        )
+
+        for i, (metadata, sim_score) in enumerate(
+            initial_results[:top_k], 1
+        ):
+            title = metadata.get('title', 'Unknown')
+            section = metadata.get('section_title', '')
+            page = metadata.get('page_number')
+
+            location = f" - {section}" if section else ""
+            location += f" (Page {page})" if page else ""
+
+            console.print(
+                f"{i}. [cyan]{title}{location}[/cyan]"
+            )
+            console.print(f"   Similarity: {sim_score:.3f}")
+
+        console.print(
+            f"\n[bold]After Reranking "
+            f"(threshold={threshold}):[/bold]\n"
+        )
+
+        if not reranked:
+            console.print(
+                f"[yellow]No results passed threshold "
+                f"of {threshold}[/yellow]"
+            )
+        else:
+            for i, (metadata, sim_score, rel_score) in enumerate(
+                reranked, 1
+            ):
+                title = metadata.get('title', 'Unknown')
+                section = metadata.get('section_title', '')
+                page = metadata.get('page_number')
+
+                location = f" - {section}" if section else ""
+                location += f" (Page {page})" if page else ""
+
+                # Highlight high relevance
+                rel_color = (
+                    "green" if rel_score >= 0.7
+                    else "yellow" if rel_score >= 0.5
+                    else "red"
+                )
+
+                console.print(
+                    f"{i}. [cyan]{title}{location}[/cyan]"
+                )
+                console.print(
+                    f"   Similarity: {sim_score:.3f}, "
+                    f"Relevance: [{rel_color}]{rel_score:.3f}[/{rel_color}]"
+                )
+
+        # Step 4: Summary
+        console.print(
+            f"\n[bold]Summary:[/bold]\n"
+            f"  Initial results: {len(initial_results)}\n"
+            f"  After filtering: {len(reranked)}\n"
+            f"  Filtered out: "
+            f"{len(initial_results[:top_k * 2]) - len(reranked)}"
+        )
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
