@@ -212,6 +212,11 @@ def ask(
         "--threshold",
         "-t",
         help="Minimum relevance score (0-1) for reranking"
+    ),
+    enforce_citations: bool = typer.Option(
+        True,
+        "--citations/--no-citations",
+        help="Enforce citation format in answers"
     )
 ):
     """Ask a question using RAG (Retrieval-Augmented Generation)."""
@@ -297,11 +302,21 @@ def ask(
             page_num = metadata.get('page_number')
             section_title = metadata.get('section_title')
 
+            # Build document reference for citations
+            doc_ref = f"[Doc{i}]"
+            location_info = ""
+            if section_title:
+                location_info = f" (Section: {section_title})"
+            elif page_num:
+                location_info = f" (Page {page_num})"
+
             context_parts.append(
-                f"[Document {i}: {title}]\n{content}\n"
+                f"{doc_ref} {title}{location_info}\n{content}\n"
             )
 
             source = {
+                'id': i,
+                'doc_ref': doc_ref,
                 'title': title,
                 'file': file_path,
                 'score': score,
@@ -318,7 +333,35 @@ def ask(
         context = "\n".join(context_parts)
 
         # Step 3: Create prompt for LLM
-        system_prompt = """You are a helpful assistant that answers questions based on provided document context.
+        if enforce_citations:
+            system_prompt = """You are a helpful assistant that answers questions based on provided document context.
+
+CRITICAL REQUIREMENTS:
+1. Answer based ONLY on the information in the provided documents
+2. ALWAYS cite sources using the [Doc#] references (e.g., [Doc1], [Doc2])
+3. Every claim or fact MUST include at least one citation
+4. Format: State the information, then add the citation [Doc#]
+5. If information spans multiple documents, cite all relevant sources
+6. If the answer is not in the documents, say "I don't have enough information to answer that question."
+
+CITATION FORMAT EXAMPLES:
+- Santiago caught a large marlin [Doc1].
+- The old man was 84 days without a fish [Doc2], but he remained hopeful [Doc3].
+- According to the text, Santiago showed great determination [Doc1] [Doc2].
+
+Your response MUST include citations for every factual statement."""
+
+            user_prompt = f"""Context from indexed documents (each marked with [Doc#] for citation):
+
+{context}
+
+---
+
+Question: {question}
+
+Provide a comprehensive answer with mandatory citations using [Doc#] format."""
+        else:
+            system_prompt = """You are a helpful assistant that answers questions based on provided document context.
 
 Guidelines:
 - Answer based ONLY on the information in the provided documents
@@ -327,7 +370,7 @@ Guidelines:
 - Cite specific details from the documents when relevant
 - If documents conflict, mention the different perspectives"""
 
-        user_prompt = f"""Context from indexed documents:
+            user_prompt = f"""Context from indexed documents:
 
 {context}
 
@@ -363,6 +406,24 @@ Please provide a clear and concise answer based on the context above."""
         console.print("\n[bold green]Answer:[/bold green]\n")
         console.print(answer)
         console.print()
+
+        # Display citation validation (only if citations are enforced)
+        if enforce_citations:
+            import re
+            citation_pattern = r'\[Doc\d+\]'
+            citations_found = re.findall(citation_pattern, answer)
+
+            if citations_found:
+                console.print(
+                    f"[dim]✓ Citations present: "
+                    f"{len(set(citations_found))} unique sources cited[/dim]\n"
+                )
+            else:
+                console.print(
+                    "[yellow]⚠ Warning: No citations found in response. "
+                    "The answer may not be properly grounded in source documents."
+                    "[/yellow]\n"
+                )
 
         # Step 6: Show sources if requested
         if show_sources:

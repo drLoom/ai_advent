@@ -49,6 +49,9 @@ uv run python main.py index --help
 # Index a PDF document
 uv run python main.py index add "document.pdf"
 
+# Index an EPUB ebook
+uv run python main.py index add "book.epub"
+
 # Index a markdown file
 uv run python main.py index add README.md
 
@@ -101,6 +104,35 @@ uv run python main.py index ask "How to install?" --rerank --rerank-model "opena
 uv run python main.py index ask "What are the highlights?" --no-sources
 ```
 
+**Citation Enforcement**
+
+By default, answers include **mandatory citations** in `[Doc#]` format, ensuring every claim is traceable to source documents:
+
+```bash
+# With citations (default behavior)
+uv run python main.py index ask "What happened in the story?"
+
+# Example output with citations:
+# "Santiago caught a large marlin [Doc1]. The old man was 84 days
+# without a fish [Doc2], but he remained hopeful [Doc3]."
+#
+# ✓ Citations present: 3 unique sources cited
+
+# Disable citations for more natural responses
+uv run python main.py index ask "What happened in the story?" --no-citations
+
+# The system automatically validates citations and warns if they're missing
+# This prevents hallucinations by keeping answers grounded in source documents
+```
+
+**Key Features:**
+- **Enabled by default**: Every factual claim includes a citation reference
+- **Toggle on/off**: Use `--citations` (default) or `--no-citations`
+- Citations link back to specific documents with page/chapter numbers
+- Automatic validation detects missing citations
+- Prevents hallucinations by requiring source grounding
+- Works across all languages (tested with English and Russian)
+
 **List Indexed Documents**
 ```bash
 # List all documents
@@ -145,6 +177,7 @@ uv run python main.py index ranking "Performance tips" --rerank-model "openai/gp
 #### Supported File Types
 
 - **PDF**: `.pdf`
+- **EPUB**: `.epub`
 - **Markdown**: `.md`, `.markdown`
 - **Code**: `.py`, `.js`, `.ts`, `.tsx`, `.jsx`, `.java`, `.cpp`, `.c`, `.go`, `.rs`, `.rb`, `.php`, `.swift`, `.kt`, `.scala`
 - **Text**: `.txt`, `.log`, `.csv`, `.json`, `.xml`, `.html`
@@ -154,12 +187,15 @@ uv run python main.py index ranking "Performance tips" --rerank-model "openai/gp
 1. **Document Loading**: Extracts text from various file formats
    - PDF files use PyMuPDF for better text extraction with layout preservation
    - Page numbers are tracked and preserved for PDF documents
+   - EPUB files use ebooklib to extract text from chapters
+   - Chapter numbers are tracked and preserved for EPUB documents
 2. **Smart Chunking**: Intelligently splits text based on document structure
    - **Markdown files (.md)**: Heading-aware chunking that preserves document hierarchy
      - Keeps sections together when possible
      - Creates hierarchical section paths (e.g., "Installation > Dependencies")
      - Better semantic coherence for documentation and structured content
    - **PDF files (.pdf)**: Token-based chunking with page number tracking
+   - **EPUB files (.epub)**: Token-based chunking with chapter number tracking
    - **Other files**: Token-based chunking (default 500 tokens with 50 token overlap)
 3. **Embedding Generation**: Creates vector embeddings using OpenAI's text-embedding-3-small model
 4. **Vector Storage**: Stores embeddings in FAISS index for fast similarity search
@@ -169,12 +205,53 @@ uv run python main.py index ranking "Performance tips" --rerank-model "openai/gp
 6. **RAG (Retrieval-Augmented Generation)**: Combines search results with LLM to answer questions based on your documents
    - Source citations show section paths for markdown files (e.g., "Configuration > API Keys")
    - Source citations include page numbers for PDFs (e.g., "Page 5")
+   - **Mandatory Citation Enforcement**: All answers include citations in `[Doc#]` format
+     - Every factual claim is linked to a source document
+     - Automatic validation detects missing citations
+     - Prevents hallucinations by requiring source grounding
+     - Citations show document title, page/chapter numbers for verification
    - **Optional Reranking**: Second-stage relevance filtering to improve answer quality
      - Uses an LLM to score each chunk's relevance to the specific query (0-1 scale)
      - Filters out irrelevant chunks using a configurable threshold (default: 0.5)
      - Reorders results by actual relevance, not just vector similarity
      - Reduces noise and improves answer accuracy
      - Recommended model: `openai/gpt-4o-mini` (fast and accurate)
+
+### Testing Citation Enforcement
+
+Validate that the citation system is working correctly:
+
+```bash
+# Run comprehensive citation tests with citations enabled (default)
+uv run python test_citations.py
+
+# Run tests with citations enforced (explicit)
+uv run python test_citations.py --citations
+
+# Run tests with citations disabled
+uv run python test_citations.py --no-citations
+
+# The test suite will:
+# - Test with and without reranking
+# - Verify citations are present in all answers (when enabled)
+# - Calculate citation rates and averages
+# - Provide hallucination analysis
+# - Generate detailed comparison reports
+
+# View detailed test report
+cat CITATION_TEST_REPORT.md
+
+# View citation modes documentation
+cat CITATION_MODES.md
+```
+
+**What the test checks:**
+- Citation presence in responses (target: 100% when enabled)
+- Citation format validation (`[Doc#]` pattern)
+- Unique source count per answer
+- Comparison of reranking impact on citations
+- Manual hallucination detection guidelines
+- Impact of citation enforcement on answer quality
 
 ### HTTP Server (server.py)
 
