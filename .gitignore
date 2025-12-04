@@ -16,3 +16,5 @@ db/articles.sqlite
 PLAN.md
 NVIDIAAn (1).pdf
 /indexes/
+image_generation.log
+/images

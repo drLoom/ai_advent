@@ -253,6 +253,108 @@ cat CITATION_MODES.md
 - Manual hallucination detection guidelines
 - Impact of citation enforcement on answer quality
 
+### Image Generation CLI
+
+Generate AI images from text prompts with full parameter control and request logging.
+
+#### View Image Commands
+
+```bash
+# View all image generation commands
+uv run python main.py image --help
+
+# View configuration
+uv run python main.py image info
+```
+
+#### Generate Images
+
+```bash
+# Basic image generation
+uv run python main.py image generate "a beautiful sunset over mountains"
+
+# Specify image size
+uv run python main.py image generate "cyberpunk city" --size 512x512
+
+# Control quality/steps
+uv run python main.py image generate "abstract art" --quality high
+
+# Use seed for reproducibility
+uv run python main.py image generate "cat in space" --seed 42
+
+# Save to file
+uv run python main.py image generate "futuristic vehicle" --output images/car.png
+
+# Combine parameters
+uv run python main.py image generate "dragon in clouds" \
+  --size 1024x1024 \
+  --quality high \
+  --seed 12345 \
+  --output dragon.png
+
+# Disable logging
+uv run python main.py image generate "landscape" --no-log
+```
+
+#### View Generation Logs
+
+```bash
+# View last 10 generation requests
+uv run python main.py image logs
+
+# View more logs
+uv run python main.py image logs --limit 20
+
+# View specific log file
+uv run python main.py image logs --file custom_logs.log
+```
+
+#### Image Generation Features
+
+- **Model Configuration**: Uses `amazon/nova-2-lite-v1` by default (configurable in `models/models.py`)
+- **Parameter Control**:
+  - `--prompt`: Text description of the image to generate
+  - `--model`: Choose image generation model
+  - `--size`: Image dimensions (e.g., `1024x1024`, `512x512`, `768x768`)
+  - `--quality`: Quality level (`standard`, `high`) or steps (numeric value)
+  - `--seed`: Random seed for reproducible results
+  - `--output`: Save image to specified file path
+  - `--no-log`: Disable request logging
+- **Request Logging**: Automatically logs:
+  - Model name used
+  - All input parameters (prompt, size, quality, seed)
+  - Response latency in milliseconds
+  - Cost estimate (if provided by API)
+  - Image URL and save location
+- **Progress Indicators**: Shows generation progress with spinner
+- **Error Handling**: Clear error messages for invalid parameters or API issues
+
+#### Log Format
+
+Each request is logged with:
+```
+2025-12-03 16:30:45 - image_generation - INFO - Image generation: {
+  "timestamp": "2025-12-03T16:30:45",
+  "model": "amazon/nova-2-lite-v1",
+  "prompt": "a beautiful sunset over mountains",
+  "size": "1024x1024",
+  "quality": "standard",
+  "seed": null,
+  "latency_ms": 2543.21,
+  "cost_estimate": 0.0023,
+  "image_url": "https://..."
+}
+```
+
+#### Supported Models
+
+The default model is configured in `models/models.py`. You can use any OpenRouter-supported image generation model:
+- `amazon/nova-2-lite-v1` (default)
+- `flux/schnell`
+- `flux/dev`
+- `dall-e-3`
+- And more via OpenRouter
+
 ### HTTP Server (server.py)
 
 Run the HTTP server that accepts POST requests and forwards them to OpenRouter:
