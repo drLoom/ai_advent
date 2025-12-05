@@ -1,0 +1,41 @@
+{
+  "name": "Surfing Ocean",
+  "description": "Reggae style surfboard on sandy beach",
+  "color_palette": {
+    "primary": ["red", "blue", "yellow", "green"],
+    "accent": ["orange", "gold"],
+    "background": ["sandy beige", "ocean blue"],
+    "description": "reggae colors red yellow green"
+  },
+  "visual_style": {
+    "dimension": "DSLR camera photograph shot with Canon EOS R5 with 50mm f/1.8 lens, natural bokeh background blur, shallow depth of field, professional photography",
+    "texture": "macro level detail, every sand grain individually visible, realistic weathered surfboard with peeling paint chips, authentic sun-bleached colors, visible wood grain texture with realistic imperfections, real scratches and dents on board surface",
+    "detail_level": "HYPER REALISTIC 8K RAW photograph, studio quality lighting, perfect exposure, natural color grading like Fujifilm film stock, absolutely no AI artifacts, must be indistinguishable from real photograph taken by professional photographer",
+    "composition": "National Geographic quality product photography, golden hour lighting (soft warm sunlight), surfboard at 45 degree angle on beach, photojournalism style, real camera perspective with slight lens distortion"
+  },
+  "dos": [
+    "MUST BE INDISTINGUISHABLE FROM REAL CAMERA PHOTOGRAPH",
+    "Shot with professional DSLR camera - Canon EOS R5 or Nikon D850",
+    "Natural film grain like Kodak Portra 400",
+    "Golden hour soft lighting with long natural shadows",
+    "Show only surfboard on beach - absolutely no people",
+    "Reggae colors (red yellow green) painted on actual weathered surfboard",
+    "Macro detail - show every sand grain, scratches, paint chips",
+    "Real sun-faded colors and authentic beach weathering",
+    "Natural bokeh blur in background with f/1.8 aperture",
+    "Visible texture imperfections - worn paint, small dents, sun damage",
+    "Professional color grading like real beach photography",
+    "Natural lighting imperfections and lens flares",
+    "RAW unprocessed camera quality"
+  ],
+  "donts": [
+    "ABSOLUTELY NO digital art or AI-generated look",
+    "NO cartoon, illustration, or painting style whatsoever",
+    "NO perfect symmetry or artificial placement",
+    "NO overly saturated or enhanced colors",
+    "NO HDR or over-processed look",
+    "NO people, surfers, or human elements",
+    "NO water action or ocean waves",
+    "NO harsh midday sunlight - only golden hour soft light"
+  ]
+}

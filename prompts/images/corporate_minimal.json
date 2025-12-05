@@ -1,0 +1,49 @@
+{
+  "name": "Corporate Minimal",
+  "description": "Clean, professional corporate aesthetic with minimal design",
+  "color_palette": {
+    "primary": ["#2C3E50", "#34495E", "#7F8C8D"],
+    "accent": ["#3498DB", "#2980B9"],
+    "background": ["#ECF0F1", "#FFFFFF", "#BDC3C7"],
+    "description": "Cool blues and grays, high contrast, professional"
+  },
+  "mood": [
+    "professional",
+    "trustworthy",
+    "clean",
+    "modern",
+    "corporate"
+  ],
+  "visual_style": {
+    "dimension": "flat design with subtle shadows",
+    "texture": "smooth, minimal texture",
+    "detail_level": "medium - focus on key elements only",
+    "composition": "centered, balanced, lots of negative space",
+    "typography": "sans-serif, bold headlines",
+    "iconography": "simple geometric icons"
+  },
+  "dos": [
+    "Use clean geometric shapes",
+    "Maintain high contrast for readability",
+    "Include plenty of white space",
+    "Use grid-based layouts",
+    "Keep illustrations simple and professional",
+    "Use consistent line weights",
+    "Employ subtle gradients if any"
+  ],
+  "donts": [
+    "No cluttered compositions",
+    "Avoid bright neon colors",
+    "No hand-drawn or sketchy elements",
+    "No excessive decorative elements",
+    "Avoid complex textures or patterns",
+    "No casual or playful fonts",
+    "No overly artistic or abstract imagery"
+  ],
+  "reference_styles": [
+    "corporate brochure",
+    "business presentation",
+    "tech startup landing page"
+  ],
+  "prompt_template": "Create a {subject} in a corporate minimal style. Use a color palette of cool blues (#3498DB, #2980B9) and grays (#2C3E50, #7F8C8D) with clean white backgrounds. Design should be flat with subtle shadows, smooth textures, and medium detail level focusing on key elements only. Composition should be centered and balanced with lots of negative space. Style: professional, trustworthy, modern. Include clean geometric shapes, high contrast, grid-based layout. DO: use simple geometric icons, consistent line weights, subtle gradients. DON'T: include cluttered elements, bright neon colors, hand-drawn elements, or decorative patterns."
+}

@@ -1,0 +1,54 @@
+{
+  "name": "Retro Vintage",
+  "description": "Nostalgic 70s-80s inspired aesthetic with warm tones and analog feel",
+  "color_palette": {
+    "primary": ["#D4A574", "#8B7355", "#CD853F", "#DEB887"],
+    "accent": ["#DC143C", "#FF6347", "#F4A460"],
+    "background": ["#FFF8DC", "#FAEBD7", "#F5DEB3"],
+    "description": "Warm earthy tones, sepia-inspired, muted saturations"
+  },
+  "mood": [
+    "nostalgic",
+    "warm",
+    "comfortable",
+    "authentic",
+    "timeless",
+    "handcrafted"
+  ],
+  "visual_style": {
+    "dimension": "flat with retro perspective effects",
+    "texture": "grainy, paper texture, halftone patterns",
+    "detail_level": "medium - with vintage ornamental details",
+    "composition": "symmetrical, badge-like, framed elements",
+    "typography": "serif, script, hand-lettered vintage fonts",
+    "iconography": "vintage badges, ribbons, ornamental borders"
+  },
+  "dos": [
+    "Use warm, muted color palettes",
+    "Add grain and texture overlays",
+    "Include vintage typography elements",
+    "Use symmetrical, balanced compositions",
+    "Add ornamental borders or frames",
+    "Incorporate retro patterns (stripes, sunbursts)",
+    "Use aged paper or film effects",
+    "Include hand-drawn ornamental details"
+  ],
+  "donts": [
+    "No modern flat design elements",
+    "Avoid bright neon or digital colors",
+    "No clean sans-serif fonts",
+    "Avoid asymmetric modern layouts",
+    "No glossy or plastic-looking surfaces",
+    "Don't use sharp digital gradients",
+    "Avoid futuristic or tech elements",
+    "No minimalist bare designs"
+  ],
+  "reference_styles": [
+    "1970s poster design",
+    "vintage packaging",
+    "retro diner signage",
+    "old book covers",
+    "analog photography aesthetic"
+  ],
+  "prompt_template": "Create a {subject} in a retro vintage style. Use warm earthy color palette with tans (#D4A574, #CD853F), browns (#8B7355), and accent reds (#DC143C, #FF6347) on cream backgrounds (#FFF8DC). Design should be flat with retro perspective effects, grainy paper texture with halftone patterns, medium detail level with vintage ornamental elements. Composition should be symmetrical and badge-like with framed elements. Style: nostalgic, warm, authentic, timeless. Include vintage typography (serif, script fonts), retro badges and ribbons, ornamental borders. DO: add grain texture, use muted warm colors, symmetrical layout, aged paper effects. DON'T: use modern flat elements, bright neon colors, clean sans-serif fonts, glossy surfaces, futuristic elements."
+}

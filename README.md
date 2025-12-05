@@ -296,6 +296,44 @@ uv run python main.py image generate "dragon in clouds" \
 uv run python main.py image generate "landscape" --no-log
 ```
 
+#### Use Style Profiles
+
+Apply consistent brand/style guidelines to your generated images using style profiles:
+
+```bash
+# List available style profiles
+uv run python main.py image profiles
+
+# Generate with corporate minimal style
+uv run python main.py image generate "modern office workspace" \
+  --prompt-file corporate_minimal \
+  --size 1024x1024
+
+# Generate with vibrant creative style
+uv run python main.py image generate "music festival poster" \
+  --prompt-file vibrant_creative \
+  --seed 42
+
+# Generate with retro vintage style
+uv run python main.py image generate "coffee shop logo" \
+  --prompt-file retro_vintage
+```
+
+**Available Style Profiles:**
+- `corporate_minimal`: Clean, professional corporate aesthetic
+- `vibrant_creative`: Bold, energetic creative style
+- `retro_vintage`: Nostalgic 70s-80s inspired aesthetic
+- `surfing_ocean`: Dynamic ocean and surf culture with vibrant water colors
+
+Each profile includes:
+- Color palette with specific hex codes
+- Mood and atmosphere guidelines
+- Visual style specifications (dimension, texture, detail level)
+- Do's and don'ts for consistent styling
+- Comprehensive prompt templates
+
+Create custom profiles by adding JSON files to `prompts/images/`. See [prompts/images/README.md](prompts/images/README.md) for details.
+
 #### View Generation Logs
 
 ```bash
@@ -311,14 +349,18 @@ uv run python main.py image logs --file custom_logs.log
 
 #### Image Generation Features
 
-- **Model Configuration**: Uses `amazon/nova-2-lite-v1` by default (configurable in `models/models.py`)
+- **Model Configuration**: Uses `google/gemini-2.5-flash-image-preview` by default (configurable in `models/models.py`)
+- **Style Profiles**: Apply consistent brand/style guidelines using JSON profiles
+  - `--prompt-file`: Specify a style profile (e.g., `corporate_minimal`, `vibrant_creative`)
+  - Includes color palettes, mood keywords, visual style specs
+  - Create custom profiles in `prompts/images/` directory
 - **Parameter Control**:
-  - `--prompt`: Text description of the image to generate
+  - `--prompt`: Text description of the image to generate (subject when using style profiles)
   - `--model`: Choose image generation model
   - `--size`: Image dimensions (e.g., `1024x1024`, `512x512`, `768x768`)
   - `--quality`: Quality level (`standard`, `high`) or steps (numeric value)
   - `--seed`: Random seed for reproducible results
-  - `--output`: Save image to specified file path
+  - `--output`: Save image to specified file path (auto-generated in `./images` by default)
   - `--no-log`: Disable request logging
 - **Request Logging**: Automatically logs:
   - Model name used

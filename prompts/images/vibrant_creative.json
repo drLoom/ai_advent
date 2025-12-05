@@ -1,0 +1,52 @@
+{
+  "name": "Vibrant Creative",
+  "description": "Bold, energetic creative style with rich colors and dynamic compositions",
+  "color_palette": {
+    "primary": ["#FF6B6B", "#4ECDC4", "#FFE66D", "#A8E6CF"],
+    "accent": ["#FF8C42", "#C44569", "#6C5CE7"],
+    "background": ["#FFF9E6", "#F8F3F0", "#E8F8F5"],
+    "description": "Vibrant multi-color palette, warm and cool contrast, energetic"
+  },
+  "mood": [
+    "energetic",
+    "playful",
+    "creative",
+    "inspiring",
+    "dynamic",
+    "youthful"
+  ],
+  "visual_style": {
+    "dimension": "3D with depth and layering",
+    "texture": "rich textures, gradients, subtle grain",
+    "detail_level": "high - intricate details and embellishments",
+    "composition": "dynamic, asymmetric, overlapping elements",
+    "typography": "mix of bold and script fonts, varied sizes",
+    "iconography": "organic shapes, playful illustrations"
+  },
+  "dos": [
+    "Use bold, saturated colors",
+    "Create dynamic compositions with movement",
+    "Include textured elements and gradients",
+    "Layer elements for depth",
+    "Use organic, flowing shapes",
+    "Incorporate playful illustrations",
+    "Add subtle animations or motion blur",
+    "Mix different artistic styles"
+  ],
+  "donts": [
+    "No dull or muted colors",
+    "Avoid static, centered layouts",
+    "No purely geometric rigid shapes",
+    "Avoid corporate or conservative styling",
+    "No monochrome palettes",
+    "Don't use overly serious imagery",
+    "Avoid minimalist bare designs"
+  ],
+  "reference_styles": [
+    "creative agency portfolio",
+    "music festival poster",
+    "youth brand campaign",
+    "indie game artwork"
+  ],
+  "prompt_template": "Create a {subject} in a vibrant creative style. Use a bold multi-color palette with warm reds/oranges (#FF6B6B, #FF8C42) and cool teals/purples (#4ECDC4, #6C5CE7) with bright yellows (#FFE66D). Design should be 3D with depth and layering, rich textures with gradients and subtle grain, high detail level with intricate embellishments. Composition should be dynamic and asymmetric with overlapping elements. Style: energetic, playful, inspiring, youthful. Include organic flowing shapes, playful illustrations, varied typography. DO: use bold saturated colors, create movement, layer elements, add texture. DON'T: use dull colors, static centered layouts, rigid geometric shapes, corporate styling."
+}

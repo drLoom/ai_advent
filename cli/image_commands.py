@@ -1,6 +1,9 @@
 """CLI commands for image generation."""
 import typer
 import re
+import json
+import subprocess
+import sys
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
@@ -16,6 +19,99 @@ console = Console()
 
 # Default directory for saved images
 IMAGES_DIR = Path("images")
+
+# Directory for prompt style profiles
+PROMPTS_DIR = Path("prompts/images")
+
+
+def load_style_profile(profile_name: str) -> dict:
+    """Load a style profile from JSON file."""
+    profile_path = PROMPTS_DIR / f"{profile_name}.json"
+
+    if not profile_path.exists():
+        raise FileNotFoundError(
+            f"Style profile '{profile_name}' not found at {profile_path}. "
+            f"Available profiles: {list_available_profiles()}"
+        )
+
+    with open(profile_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def list_available_profiles() -> list[str]:
+    """List all available style profile names."""
+    if not PROMPTS_DIR.exists():
+        return []
+
+    profiles = []
+    for file_path in PROMPTS_DIR.glob("*.json"):
+        profiles.append(file_path.stem)
+
+    return sorted(profiles)
+
+
+def build_prompt_from_profile(subject: str, profile: dict) -> str:
+    """Build a full prompt by applying style profile to subject."""
+    # Start with base subject
+    prompt_parts = [f"Create a {subject}"]
+
+    # Add description if available
+    if "description" in profile:
+        prompt_parts.append(f"in {profile['description']} style")
+
+    # Auto-inject color palette
+    if "color_palette" in profile:
+        colors = profile["color_palette"]
+        color_list = []
+
+        if "primary" in colors and colors["primary"]:
+            color_list.extend(colors["primary"])
+        if "accent" in colors and colors["accent"]:
+            color_list.extend(colors["accent"])
+        if "background" in colors and colors["background"]:
+            color_list.extend(colors["background"])
+
+        # Remove duplicates while preserving order
+        unique_colors = []
+        for c in color_list:
+            if c not in unique_colors:
+                unique_colors.append(c)
+
+        if unique_colors:
+            colors_text = ", ".join(unique_colors)
+            prompt_parts.append(f"using color palette: {colors_text}")
+            prompt_parts.append(f"All elements must use these colors: {colors_text}")
+
+    # Auto-inject visual style
+    if "visual_style" in profile:
+        vstyle = profile["visual_style"]
+
+        if "dimension" in vstyle:
+            prompt_parts.append(f"Dimension: {vstyle['dimension']}")
+
+        if "texture" in vstyle:
+            prompt_parts.append(f"Texture: {vstyle['texture']}")
+
+        if "detail_level" in vstyle:
+            prompt_parts.append(f"Detail level: {vstyle['detail_level']}")
+
+        if "composition" in vstyle:
+            prompt_parts.append(f"Composition: {vstyle['composition']}")
+
+    # Auto-inject dos
+    if "dos" in profile and profile["dos"]:
+        dos_text = ". ".join(profile["dos"])
+        prompt_parts.append(f"DO: {dos_text}")
+
+    # Auto-inject donts
+    if "donts" in profile and profile["donts"]:
+        donts_text = ". ".join(profile["donts"])
+        prompt_parts.append(f"DON'T: {donts_text}")
+
+    # Join all parts with periods
+    full_prompt = ". ".join(prompt_parts) + "."
+
+    return full_prompt
 
 
 @app.command()
@@ -44,6 +140,12 @@ def generate(
         "--seed",
         help="Random seed for reproducibility"
     ),
+    prompt_file: Optional[str] = typer.Option(
+        None,
+        "--prompt-file",
+        "-p",
+        help="Style profile name (e.g., 'corporate_minimal', 'vibrant_creative')"
+    ),
     output: Optional[str] = typer.Option(
         None,
         "--output",
@@ -54,6 +156,11 @@ def generate(
         False,
         "--no-log",
         help="Disable request logging"
+    ),
+    open_image: bool = typer.Option(
+        False,
+        "--open",
+        help="Automatically open the image after generation"
     )
 ):
     """
@@ -70,10 +177,36 @@ def generate(
         # Use seed for reproducibility
         uv run python main.py image generate "cat in space" --seed 42
 
+        # Use a style profile
+        uv run python main.py image generate "company logo" --prompt-file corporate_minimal
+
         # Save to custom location
         uv run python main.py image generate "abstract art" --output output.png
     """
     try:
+        # Load style profile if specified
+        style_profile = None
+        full_prompt = prompt
+
+        if prompt_file:
+            try:
+                style_profile = load_style_profile(prompt_file)
+                full_prompt = build_prompt_from_profile(prompt, style_profile)
+
+                console.print(f"\n[bold cyan]Using Style Profile:[/bold cyan] "
+                             f"[yellow]{style_profile['name']}[/yellow]")
+                console.print(f"[dim]{style_profile['description']}[/dim]\n")
+
+            except FileNotFoundError as e:
+                console.print(f"[bold red]Error:[/bold red] {str(e)}", style="red")
+                return
+            except Exception as e:
+                console.print(
+                    f"[bold red]Error loading style profile:[/bold red] {str(e)}",
+                    style="red"
+                )
+                return
+
         # Auto-generate output path if not specified
         if output is None:
             # Create images directory if it doesn't exist
@@ -82,6 +215,8 @@ def generate(
             # Generate filename from timestamp and sanitized prompt
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_prompt = re.sub(r'[^\w\s-]', '', prompt)[:50].strip().replace(' ', '_')
+            if prompt_file:
+                safe_prompt = f"{prompt_file}_{safe_prompt}"
             output = str(IMAGES_DIR / f"{timestamp}_{safe_prompt}.png")
 
         # Initialize client
@@ -90,7 +225,14 @@ def generate(
         # Display request info
         console.print("\n[bold cyan]Image Generation Request[/bold cyan]")
         console.print(f"Model: [yellow]{model}[/yellow]")
-        console.print(f"Prompt: [green]{prompt}[/green]")
+
+        if prompt_file:
+            console.print(f"Subject: [green]{prompt}[/green]")
+            console.print("\n[bold]Full Generated Prompt:[/bold]")
+            console.print(f"[dim]{full_prompt}[/dim]\n")
+        else:
+            console.print(f"Prompt: [green]{prompt}[/green]")
+
         console.print(f"Size: [yellow]{size}[/yellow]")
         console.print(f"Quality: [yellow]{quality}[/yellow]")
         if seed is not None:
@@ -107,7 +249,7 @@ def generate(
             task = progress.add_task("Generating image...", total=None)
 
             response = client.generate_image(
-                prompt=prompt,
+                prompt=full_prompt,
                 model=model,
                 size=size,
                 quality=quality,
@@ -134,6 +276,24 @@ def generate(
 
         console.print(table)
         console.print()
+
+        # Show command to open image and optionally open it
+        if output:
+            console.print("[bold cyan]To open the image, run:[/bold cyan]")
+            console.print(f"[yellow]open {output}[/yellow]\n")
+
+            # Auto-open if requested
+            if open_image:
+                try:
+                    if sys.platform == "darwin":  # macOS
+                        subprocess.run(["open", output], check=True)
+                    elif sys.platform == "win32":  # Windows
+                        subprocess.run(["start", output], shell=True, check=True)
+                    else:  # Linux and others
+                        subprocess.run(["xdg-open", output], check=True)
+                    console.print("[green]✓ Image opened in default viewer[/green]\n")
+                except Exception as e:
+                    console.print(f"[yellow]⚠ Could not auto-open image: {e}[/yellow]\n")
 
         # Show URL for easy access
         console.print(f"[dim]View your image at:[/dim]")
@@ -232,6 +392,46 @@ def logs(
     except Exception as e:
         console.print(f"[red]Error reading logs: {e}[/red]")
         raise typer.Exit(1)
+
+
+@app.command()
+def profiles():
+    """
+    List available style profiles for image generation.
+    """
+    console.print("\n[bold cyan]Available Style Profiles[/bold cyan]\n")
+
+    available_profiles = list_available_profiles()
+
+    if not available_profiles:
+        console.print("[yellow]No style profiles found in prompts/images/[/yellow]")
+        console.print("\n[dim]Create JSON style profiles in the prompts/images/ directory.[/dim]")
+        return
+
+    for profile_name in available_profiles:
+        try:
+            profile = load_style_profile(profile_name)
+
+            # Create profile info box
+            console.print(f"[bold cyan]• {profile['name']}[/bold cyan] [dim]({profile_name})[/dim]")
+            console.print(f"  {profile['description']}")
+
+            # Display mood tags
+            if 'mood' in profile:
+                mood_tags = ", ".join(profile['mood'][:5])
+                console.print(f"  [dim]Mood: {mood_tags}[/dim]")
+
+            # Display color palette
+            if 'color_palette' in profile and 'description' in profile['color_palette']:
+                console.print(f"  [dim]Colors: {profile['color_palette']['description']}[/dim]")
+
+            console.print()
+
+        except Exception as e:
+            console.print(f"[yellow]• {profile_name}[/yellow] [red](Error loading: {e})[/red]\n")
+
+    console.print(f"[dim]Use with: --prompt-file <profile_name>[/dim]")
+    console.print()
 
 
 @app.command()
