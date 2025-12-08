@@ -1,0 +1,30 @@
+{
+  "name": "Surfing Simple",
+  "description": "Professional photograph of surfboard on beach",
+  "color_palette": {
+    "primary": ["red", "yellow", "green"],
+    "accent": ["sandy beige"],
+    "background": ["beach sand"],
+    "description": "reggae colors with natural beach"
+  },
+  "visual_style": {
+    "dimension": "professional photograph",
+    "texture": "detailed realistic textures",
+    "detail_level": "high quality photography",
+    "composition": "product photography composition"
+  },
+  "dos": [
+    "Professional DSLR photograph quality",
+    "Natural outdoor lighting",
+    "Sharp focus on surfboard",
+    "Weathered surfboard with reggae colors",
+    "Beach sand texture visible",
+    "Realistic wear and weathering"
+  ],
+  "donts": [
+    "No digital art or illustration",
+    "No people in frame",
+    "No water or waves",
+    "No artificial effects"
+  ]
+}

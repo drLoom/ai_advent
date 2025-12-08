@@ -1,0 +1,39 @@
+{
+  "name": "Rabbit Bullet Holes Simple",
+  "description": "Professional photograph of edgy street art style rabbit",
+  "color_palette": {
+    "primary": ["white", "grey", "black"],
+    "accent": ["red"],
+    "background": ["urban grey", "concrete"],
+    "description": "monochrome with minimal red accents"
+  },
+  "visual_style": {
+    "dimension": "professional photograph with urban backdrop",
+    "texture": "realistic fur and weathered surfaces",
+    "detail_level": "high quality photography",
+    "composition": "rabbit in foreground, striped flag in background"
+  },
+  "dos": [
+    "Professional photograph quality",
+    "White or grey rabbit as main subject",
+    "Visible damage to ears (artistic, not graphic)",
+    "Small red accent details",
+    "Sharp focus on rabbit",
+    "Striped flag visible in blurred background",
+    "Urban or street art aesthetic",
+    "Dramatic lighting",
+    "Rabbit looks confident and defiant",
+    "Realistic fur texture",
+    "Weathered, gritty atmosphere"
+  ],
+  "donts": [
+    "No cartoon or illustration style",
+    "No graphic gore or violence",
+    "No suffering or dead animal",
+    "No bright cheerful colors",
+    "No nature backgrounds",
+    "No other animals",
+    "No people visible",
+    "No cute or soft aesthetic"
+  ]
+}

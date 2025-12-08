@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 from ai.image_client import ImageClient
+from ai.vision_client import VisionClient, build_checklist_from_profile
 from models.models import IMAGE_MODEL, IMAGE_DEFAULT_SIZE, IMAGE_DEFAULT_QUALITY
 
 app = typer.Typer(help="Image generation commands")
@@ -161,6 +162,21 @@ def generate(
         False,
         "--open",
         help="Automatically open the image after generation"
+    ),
+    validate: bool = typer.Option(
+        False,
+        "--validate",
+        help="Analyze image quality against style profile criteria"
+    ),
+    threshold: float = typer.Option(
+        0.7,
+        "--threshold",
+        help="Minimum quality score to pass validation (0.0-1.0)"
+    ),
+    retry_on_fail: bool = typer.Option(
+        False,
+        "--retry",
+        help="Regenerate if image fails validation (max 3 attempts)"
     )
 ):
     """
@@ -298,6 +314,73 @@ def generate(
         # Show URL for easy access
         console.print(f"[dim]View your image at:[/dim]")
         console.print(f"[link={response.image_url}]{response.image_url}[/link]\n")
+
+        # Validate image quality if requested
+        if validate and output and style_profile:
+            console.print("[bold cyan]Validating Image Quality...[/bold cyan]\n")
+
+            try:
+                # Build checklist from profile
+                checklist = build_checklist_from_profile(style_profile)
+
+                # Analyze image
+                vision_client = VisionClient()
+
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console
+                ) as progress:
+                    task = progress.add_task("Analyzing image...", total=None)
+                    analysis = vision_client.analyze_image(output, checklist, threshold)
+                    progress.update(task, completed=True)
+
+                # Display validation results
+                console.print("\n[bold cyan]Quality Analysis Results[/bold cyan]\n")
+
+                # Scores table
+                scores_table = Table(show_header=True, header_style="bold cyan")
+                scores_table.add_column("Criterion", style="cyan")
+                scores_table.add_column("Score", style="yellow", justify="right")
+                scores_table.add_column("Status", style="white")
+
+                for criterion, score in analysis.scores.items():
+                    status = "✓" if score >= threshold else "✗"
+                    status_color = "green" if score >= threshold else "red"
+                    scores_table.add_row(
+                        criterion.replace("_", " ").title(),
+                        f"{score:.2f}",
+                        f"[{status_color}]{status}[/{status_color}]"
+                    )
+
+                console.print(scores_table)
+                console.print()
+
+                # Overall result
+                overall_color = "green" if analysis.passes_threshold else "red"
+                overall_status = "PASS" if analysis.passes_threshold else "FAIL"
+                console.print(
+                    f"[bold]Overall Score:[/bold] [{overall_color}]{analysis.overall_score:.2f}[/{overall_color}] "
+                    f"[bold {overall_color}]{overall_status}[/bold {overall_color}]\n"
+                )
+
+                # Feedback
+                if analysis.feedback:
+                    console.print(f"[bold]Feedback:[/bold] {analysis.feedback}\n")
+
+                # Issues
+                if analysis.issues:
+                    console.print("[bold yellow]Issues Found:[/bold yellow]")
+                    for issue in analysis.issues:
+                        console.print(f"  • {issue}")
+                    console.print()
+
+                # Handle retry if enabled and failed
+                if retry_on_fail and not analysis.passes_threshold:
+                    console.print("[yellow]Image failed validation. Retry not yet implemented.[/yellow]\n")
+
+            except Exception as e:
+                console.print(f"[red]Validation error: {e}[/red]\n")
 
         # Remind about logging
         if not no_log:

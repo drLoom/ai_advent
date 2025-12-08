@@ -1,0 +1,37 @@
+{
+  "name": "Urban Rabbit",
+  "description": "Street art inspired photograph of edgy rabbit",
+  "color_palette": {
+    "primary": ["white", "grey", "black"],
+    "accent": ["red"],
+    "background": ["concrete grey", "urban"],
+    "description": "monochrome with red accents"
+  },
+  "visual_style": {
+    "dimension": "professional photograph",
+    "texture": "realistic fur and urban textures",
+    "detail_level": "high quality photography",
+    "composition": "urban street art aesthetic"
+  },
+  "dos": [
+    "Professional photograph quality",
+    "White rabbit as main subject",
+    "Urban or concrete background",
+    "Dramatic lighting with contrast",
+    "Rabbit looks confident and alert",
+    "Realistic fur texture",
+    "Gritty street art atmosphere",
+    "Small red paint or graffiti accents in scene",
+    "Sharp focus on rabbit"
+  ],
+  "donts": [
+    "No cartoon or illustration",
+    "No violence or injury",
+    "No suffering animal",
+    "No bright cheerful colors",
+    "No nature backgrounds",
+    "No other animals",
+    "No people",
+    "No cute aesthetic"
+  ]
+}

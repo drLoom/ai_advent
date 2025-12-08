@@ -2,40 +2,42 @@
   "name": "Surfing Ocean",
   "description": "Reggae style surfboard on sandy beach",
   "color_palette": {
-    "primary": ["red", "blue", "yellow", "green"],
-    "accent": ["orange", "gold"],
-    "background": ["sandy beige", "ocean blue"],
-    "description": "reggae colors red yellow green"
+    "primary": ["red", "yellow", "green"],
+    "accent": ["sandy beige"],
+    "background": ["natural beach sand", "soft blue sky"],
+    "description": "reggae colors red yellow green with natural beach tones"
   },
   "visual_style": {
-    "dimension": "DSLR camera photograph shot with Canon EOS R5 with 50mm f/1.8 lens, natural bokeh background blur, shallow depth of field, professional photography",
-    "texture": "macro level detail, every sand grain individually visible, realistic weathered surfboard with peeling paint chips, authentic sun-bleached colors, visible wood grain texture with realistic imperfections, real scratches and dents on board surface",
-    "detail_level": "HYPER REALISTIC 8K RAW photograph, studio quality lighting, perfect exposure, natural color grading like Fujifilm film stock, absolutely no AI artifacts, must be indistinguishable from real photograph taken by professional photographer",
-    "composition": "National Geographic quality product photography, golden hour lighting (soft warm sunlight), surfboard at 45 degree angle on beach, photojournalism style, real camera perspective with slight lens distortion"
+    "dimension": "REAL PHOTOGRAPH TAKEN BY ACTUAL CANON EOS R5 CAMERA (NOT AI-GENERATED): Full-frame 45 megapixel sensor, Canon RF 50mm f/1.8 STM lens mounted, EXIF data shows ISO 100 1/1000s f/1.8, RAW CR3 file format. Natural optical characteristics: visible lens vignetting darkening corners by 1 stop, authentic circular aperture bokeh from 7-blade diaphragm, real chromatic aberration purple fringing on high-contrast edges, natural barrel distortion from 50mm focal length. Physical camera shake at 1/1000s creating micro-blur, sensor dust visible as dark spots in sky, hot pixels from sensor heating. This is a REAL camera file not computer graphics",
+    "texture": "ULTRA EXTREME MACRO LEVEL showing microscopic detail shot with macro extension tube: Individual sand grains 0.3-0.8mm diameter each casting separate shadows, see crystalline structure of quartz particles. Surfboard paint surface shows actual brush stroke ridges 0.1mm high, peeling paint chips with visible layer thickness 0.05mm, exposed wood grain fibers 0.2mm wide with realistic cell structure. See individual salt crystals 0.1mm from dried seawater, wax residue with irregular surface topology, scratches showing tool marks in bare wood. Every texture must have sub-millimeter detail visible at 400% zoom like real macro photograph",
+    "detail_level": "THIS IS A REAL UNEDITED RAW FILE FROM CANON EOS R5 CAMERA - NOT AI ART: 45MP resolution showing every detail, natural camera sensor noise pattern in shadows (ISO 100 noise floor), authentic dynamic range with blown highlights at 255 and shadow detail to level 10. Real Bayer sensor color filter array creating natural color, Canon's color science showing accurate skin tones. Natural lens sharpness falloff from center to edges, micro-contrast from lens coating. File shows REAL camera imperfections: sensor dust spots, dead pixels, lens fungus slight haze, natural chromatic aberration. Must pass as actual camera RAW file that professional photographer could have shot",
+    "composition": "award-winning product photography composition, surfboard filling 70% of frame at precise 45-degree angle, golden hour natural sunlight from 30-degree angle creating long realistic shadows on sand, real camera lens vignetting visible in corners, authentic lens distortion from 50mm focal length, professional photographer eye-level perspective 3 feet from subject"
   },
   "dos": [
-    "MUST BE INDISTINGUISHABLE FROM REAL CAMERA PHOTOGRAPH",
-    "Shot with professional DSLR camera - Canon EOS R5 or Nikon D850",
-    "Natural film grain like Kodak Portra 400",
-    "Golden hour soft lighting with long natural shadows",
-    "Show only surfboard on beach - absolutely no people",
-    "Reggae colors (red yellow green) painted on actual weathered surfboard",
-    "Macro detail - show every sand grain, scratches, paint chips",
-    "Real sun-faded colors and authentic beach weathering",
-    "Natural bokeh blur in background with f/1.8 aperture",
-    "Visible texture imperfections - worn paint, small dents, sun damage",
-    "Professional color grading like real beach photography",
-    "Natural lighting imperfections and lens flares",
-    "RAW unprocessed camera quality"
+    "DIMENSION PROOF - Include mandatory real camera artifacts: Corner vignetting must darken edges by minimum 0.7 stops, purple chromatic aberration on bright edges, sensor dust spots visible in smooth areas, natural barrel distortion bowing straight lines, hot pixels from sensor, micro-blur from 1/1000s handheld shooting. Show EXIF metadata indicators: 45MP resolution detail, ISO 100 noise pattern in shadows, Canon color science warm tones, natural lens sharpness falloff",
+    "TEXTURE PROOF - Show microscopic detail with MEASUREMENTS: Sand grains 0.3-0.8mm diameter individually visible with crystalline facets, paint brush strokes 0.1mm ridge height, peeling paint chips 0.05mm thick layers, wood grain fibers 0.2mm width showing cell structure, salt crystals 0.1mm size, wax residue topology irregular. Every surface must have sub-millimeter texture visible at 400% digital zoom exactly like macro extension tube photograph",
+    "DETAIL LEVEL PROOF - Must match 45 megapixel Canon sensor output: Natural sensor noise visible in shadows at pixel level, authentic dynamic range with some blown highlights RGB 255 and deep shadows RGB 10-20, real Bayer color filter pattern, Canon DPP color science, natural lens MTF chart sharpness distribution center-to-edge, micro-contrast from lens coating. Include real imperfections: 2-3 sensor dust spots, 1-2 dead pixels, slight lens fungus haze, purple fringing",
+    "Show OPTICAL bokeh not digital blur: Background must show circular 7-blade aperture bokeh circles, natural bokeh smooth falloff, NO Gaussian blur, authentic out-of-focus characteristics from f/1.8 aperture showing spherical aberration",
+    "Natural PHOTOGRAPHIC lighting: Golden hour sun at 30-degree angle, color temperature 3500K warm, long shadows 60-degree angle, soft natural light falloff inverse square law, natural highlight rolloff, no studio lights",
+    "Show only weathered surfboard on beach sand - ZERO people, hands, or human elements anywhere in frame",
+    "Surfboard must have authentic reggae stripe pattern painted on: faded red yellow green bands with visible wear, peeling paint revealing wood underneath, sun-damaged colors",
+    "Include real wear and tear: actual scratch marks showing wood grain, dents creating shadow pockets, wax buildup in textured areas, salt water staining, UV damage discoloration",
+    "Natural bokeh background blur at f/1.8: ocean horizon softly blurred with circular bokeh highlights from water reflections",
+    "Show real photography imperfections: slight natural lens flare from sun, minimal dust spots on sensor, natural color cast from golden hour lighting",
+    "Kodak Portra 400 film emulation color science: slightly warm tones, natural skin-tone accurate colors even though no people, organic color transitions"
   ],
   "donts": [
-    "ABSOLUTELY NO digital art or AI-generated look",
-    "NO cartoon, illustration, or painting style whatsoever",
-    "NO perfect symmetry or artificial placement",
-    "NO overly saturated or enhanced colors",
-    "NO HDR or over-processed look",
-    "NO people, surfers, or human elements",
-    "NO water action or ocean waves",
-    "NO harsh midday sunlight - only golden hour soft light"
+    "ZERO digital art, AI-generated art, or computer graphics look - must be actual photograph",
+    "NO illustration, cartoon, painting, drawing, or artistic rendering of any kind",
+    "NO perfect symmetry, centered composition, or artificially arranged elements",
+    "NO oversaturated colors, enhanced vibrance, or digital color grading - only natural camera colors",
+    "NO HDR processing, tone mapping, clarity enhancement, or any post-processing effects",
+    "NO perfect lighting, studio lighting, or artificial light sources - only natural golden hour sunlight",
+    "ABSOLUTELY NO people, human hands, feet, body parts, or human shadows anywhere in image",
+    "NO surfers, swimmers, beachgoers, or any living creatures",
+    "NO water splashing, ocean waves, sea foam, or water action - only calm beach sand",
+    "NO harsh midday sunlight, bright white light, or hard shadows - ONLY soft golden hour lighting",
+    "NO brand new pristine surfboard - must show authentic weathering and age",
+    "NO digital blur or Gaussian blur - only natural optical bokeh from real camera lens"
   ]
 }

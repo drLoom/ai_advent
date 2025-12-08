@@ -1,0 +1,41 @@
+{
+  "name": "Rabbit Bullet Holes",
+  "description": "Edgy street art style rabbit with bullet holes in ears",
+  "color_palette": {
+    "primary": ["white", "grey", "black"],
+    "accent": ["red", "dark red"],
+    "background": ["concrete grey", "urban texture"],
+    "description": "monochrome with red blood accents"
+  },
+  "visual_style": {
+    "dimension": "professional photograph with gritty urban aesthetic, depth of field with flag in background",
+    "texture": "detailed fur texture, realistic bullet hole damage, weathered flag fabric, urban surfaces",
+    "detail_level": "high quality photography with sharp detail on rabbit, flag slightly blurred in background",
+    "composition": "layered composition with rabbit in foreground and striped flag hanging behind, street art meets wildlife photography"
+  },
+  "dos": [
+    "White or grey rabbit as main subject in foreground",
+    "Bullet holes visible through both ears with realistic damage",
+    "Small blood stains around bullet holes",
+    "Sharp focus on rabbit face and ears",
+    "Striped flag visible in background behind rabbit",
+    "Flag should be out of focus or slightly blurred",
+    "Gritty urban or street art aesthetic",
+    "Dramatic lighting with strong contrast",
+    "Weathered concrete or urban texture visible",
+    "Rabbit should look defiant or tough, not sad",
+    "Professional photography quality",
+    "Realistic fur texture with individual hairs visible",
+    "Flag stripes in red, white, and black or other bold colors"
+  ],
+  "donts": [
+    "No cartoon or illustration style",
+    "No overly graphic gore",
+    "No dead or suffering animal - rabbit should look alive and tough",
+    "No bright cheerful colors",
+    "No nature or forest backgrounds",
+    "No other animals in frame",
+    "No people visible",
+    "No soft or cute aesthetic"
+  ]
+}
